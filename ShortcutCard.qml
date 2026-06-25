@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Shapes
 import Quickshell
 import qs.Common
 import qs.Widgets
@@ -19,7 +20,7 @@ Item {
 
     height: 44
 
-    Canvas {
+    Shape {
         id: cardBg
         anchors.fill: parent
         property real innerRadius: 6
@@ -30,10 +31,10 @@ Item {
         property real blr: card.isActive ? 21.5 : (card.isLast ? outerRadius : innerRadius)
         property real brr: card.isActive ? 21.5 : (card.isLast ? outerRadius : innerRadius)
 
-        property real tlrAnim: tlr; Behavior on tlrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
-        property real trrAnim: trr; Behavior on trrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
-        property real blrAnim: blr; Behavior on blrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
-        property real brrAnim: brr; Behavior on brrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
+        property real tlrAnim: tlr; Behavior on tlrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
+        property real trrAnim: trr; Behavior on trrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
+        property real blrAnim: blr; Behavior on blrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
+        property real brrAnim: brr; Behavior on brrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
 
         property color paintColor: card.disabled ? "transparent" : (card.isActive
             ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.18)
@@ -49,36 +50,23 @@ Item {
                 : Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.15))
         Behavior on paintBorder { ColorAnimation { duration: 150 } }
 
-        onTlrAnimChanged: requestPaint()
-        onTrrAnimChanged: requestPaint()
-        onBlrAnimChanged: requestPaint()
-        onBrrAnimChanged: requestPaint()
-        onPaintColorChanged: requestPaint()
-        onPaintBorderChanged: requestPaint()
+        ShapePath {
+            fillColor: cardBg.paintColor
+            strokeColor: cardBg.paintBorder
+            strokeWidth: 1
+            startX: 0.5 + cardBg.tlrAnim; startY: 0.5
 
-        onPaint: {
-            var ctx = getContext("2d");
-            var x = 0.5, y = 0.5;
-            var w = width - 1, h = height - 1;
+            PathLine { x: cardBg.width - 0.5 - cardBg.trrAnim; y: 0.5 }
+            PathArc { x: cardBg.width - 0.5; y: 0.5 + cardBg.trrAnim; radiusX: cardBg.trrAnim; radiusY: cardBg.trrAnim; direction: PathArc.Clockwise }
             
-            ctx.reset();
-            ctx.beginPath();
-            ctx.moveTo(x + tlrAnim, y);
-            ctx.lineTo(x + w - trrAnim, y);
-            ctx.arcTo(x + w, y, x + w, y + trrAnim, trrAnim);
-            ctx.lineTo(x + w, y + h - brrAnim);
-            ctx.arcTo(x + w, y + h, x + w - brrAnim, y + h, brrAnim);
-            ctx.lineTo(x + blrAnim, y + h);
-            ctx.arcTo(x, y + h, x, y + h - blrAnim, blrAnim);
-            ctx.lineTo(x, y + tlrAnim);
-            ctx.arcTo(x, y, x + tlrAnim, y, tlrAnim);
-            ctx.closePath();
+            PathLine { x: cardBg.width - 0.5; y: cardBg.height - 0.5 - cardBg.brrAnim }
+            PathArc { x: cardBg.width - 0.5 - cardBg.brrAnim; y: cardBg.height - 0.5; radiusX: cardBg.brrAnim; radiusY: cardBg.brrAnim; direction: PathArc.Clockwise }
             
-            ctx.fillStyle = paintColor.toString();
-            ctx.fill();
-            ctx.strokeStyle = paintBorder.toString();
-            ctx.lineWidth = 1;
-            ctx.stroke();
+            PathLine { x: 0.5 + cardBg.blrAnim; y: cardBg.height - 0.5 }
+            PathArc { x: 0.5; y: cardBg.height - 0.5 - cardBg.blrAnim; radiusX: cardBg.blrAnim; radiusY: cardBg.blrAnim; direction: PathArc.Clockwise }
+            
+            PathLine { x: 0.5; y: 0.5 + cardBg.tlrAnim }
+            PathArc { x: 0.5 + cardBg.tlrAnim; y: 0.5; radiusX: cardBg.tlrAnim; radiusY: cardBg.tlrAnim; direction: PathArc.Clockwise }
         }
     }
 

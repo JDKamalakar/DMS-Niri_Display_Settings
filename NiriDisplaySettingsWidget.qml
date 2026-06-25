@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Shapes
 
 import Quickshell
 import Quickshell.Io
@@ -22,15 +23,17 @@ PluginComponent {
     }
 
     IpcHandler {
-        target: "niriDS"
+        target: "niriDSA"
 
         function toggle(): string {
             if (displayModal.shouldBeVisible) {
+                displayModal.shouldBeVisible = false;
                 displayModal.close();
             } else {
                 displayModal.activeCustomizationDisplay = null;
                 NiriDS.detectFocusedOutput();
                 NiriDS.setDisplays();
+                displayModal.shouldBeVisible = true;
                 displayModal.openCentered();
             }
             return "SUCCESS";
@@ -40,11 +43,13 @@ PluginComponent {
             displayModal.activeCustomizationDisplay = null;
             NiriDS.detectFocusedOutput();
             NiriDS.setDisplays();
+            displayModal.shouldBeVisible = true;
             displayModal.openCentered();
             return "SUCCESS";
         }
 
         function close(): string {
+            displayModal.shouldBeVisible = false;
             displayModal.close();
             return "SUCCESS";
         }
@@ -58,6 +63,68 @@ PluginComponent {
                 return "SUCCESS";
             }
             return "ERROR: Invalid profile: " + profile;
+        }
+    }
+
+    readonly property bool isDaemonInstance: root.parent !== null
+    property int lastOutputCount: 0
+    property int initTicks: 0
+    property var cachedRawOutputs: ({} )
+
+    function checkFallback() {
+        const enableFallback = pluginData?.enableFallback ?? true;
+        if (!enableFallback) return;
+
+        // Kill wl-mirror first — its target output just disappeared
+        NiriDS.stopMirror();
+
+        NiriDS.enableInternalDisplay();
+        Qt.callLater(() => NiriDS.enableInternalDisplay());
+        Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
+    }
+
+    Timer {
+        id: niriWatcher
+        interval: (pluginData?.pollingInterval ?? 3) * 1000
+        repeat: true
+        running: true
+
+        onTriggered: {
+            NiriDS.setDisplays();
+            root.initTicks++;
+
+            Qt.callLater(() => {
+                const current = NiriDS.displays.length;
+
+                // Skip first 2 ticks to allow Niri to stabilize outputs
+                if (root.initTicks < 3) {
+                    if (root.initTicks === 2) {
+                        root.lastOutputCount = current;
+                    }
+                    return;
+                }
+
+                if (current > root.lastOutputCount) {
+                    const action = (pluginData && typeof pluginData.connectionAction === 'string' && pluginData.connectionAction)
+                        ? pluginData.connectionAction
+                        : "show_menu";
+
+                    if (action === "show_menu") {
+                        displayModal.activeCustomizationDisplay = null;
+                        NiriDS.detectFocusedOutput();
+                        NiriDS.setDisplays();
+                        displayModal.shouldBeVisible = true;
+                        displayModal.openCentered();
+                    } else if (action !== "none") {
+                        NiriDS.apply(action);
+                    }
+                } else if (root.lastOutputCount > 0 && current < root.lastOutputCount) {
+                    // Display count decreased - external monitor unplugged
+                    checkFallback();
+                }
+
+                root.lastOutputCount = current;
+            });
         }
     }
 
@@ -122,6 +189,7 @@ PluginComponent {
             Loader {
                 width: parent.width
                 sourceComponent: niriWidgetContent
+                asynchronous: true
                 readonly property bool inCC: true
             }
         }
@@ -138,6 +206,7 @@ PluginComponent {
             Loader {
                 width: parent.width
                 sourceComponent: niriWidgetContent
+                asynchronous: true
                 readonly property bool inCC: false
             }
         }
@@ -146,14 +215,14 @@ PluginComponent {
     readonly property bool disableInternalOption: {
         const val = root.pluginData ? root.pluginData.disableInternalOption : undefined;
         if (val !== undefined) return val === true || val === "true";
-        const raw = SettingsData.getPluginSetting("niriDS", "disableInternalOption", false);
+        const raw = SettingsData.getPluginSetting("niriDSA", "disableInternalOption", false);
         return raw === true || raw === "true";
     }
 
     readonly property bool showDisplayProfiles: {
         const val = root.pluginData ? root.pluginData.showDisplayProfiles : undefined;
         if (val !== undefined) return val === true || val === "true";
-        const raw = SettingsData.getPluginSetting("niriDS", "showDisplayProfiles", false);
+        const raw = SettingsData.getPluginSetting("niriDSA", "showDisplayProfiles", false);
         return raw === true || raw === "true";
     }
 
@@ -199,7 +268,7 @@ PluginComponent {
 
             // Premium Header Card (with Refresh but NO Fullscreen button)
             StyledRect {
-                width: parent.width - (mainCol.inCC ? 32 : 0)
+                width: Math.max(0, parent.width - (mainCol.inCC ? 32 : 0))
                 anchors.horizontalCenter: parent.horizontalCenter
                 height: 72
                 radius: Theme.cornerRadius
@@ -311,7 +380,7 @@ PluginComponent {
             // Section 1: Display Profiles (Projection Modes)
             StyledRect {
                 id: profileSection
-                width: parent.width - (mainCol.inCC ? 32 : 0)
+                width: Math.max(0, parent.width - (mainCol.inCC ? 32 : 0))
                 anchors.horizontalCenter: parent.horizontalCenter
                 height: profileCol.implicitHeight + Theme.spacingM * 2
                 radius: Theme.cornerRadius
@@ -382,7 +451,7 @@ PluginComponent {
             // Section 2: Manual Output Toggles
             StyledRect {
                 id: manualSection
-                width: parent.width - (mainCol.inCC ? 32 : 0)
+                width: Math.max(0, parent.width - (mainCol.inCC ? 32 : 0))
                 anchors.horizontalCenter: parent.horizontalCenter
                 height: manualCol.implicitHeight + Theme.spacingM * 2
                 visible: root.optionCount > 0
@@ -422,7 +491,7 @@ PluginComponent {
                                 property bool isOutputActive: !(modelData && modelData.disabled)
                                 property bool hovered: itemHover.containsMouse
 
-                                Canvas {
+                                Shape {
                                     id: cardBg
                                     anchors.fill: parent
                                     property real innerRadius: 6
@@ -438,10 +507,10 @@ PluginComponent {
                                     property real blr: manualItem.isOutputActive ? 23.5 : ((isLast || isNextActive) ? outerRadius : innerRadius)
                                     property real brr: manualItem.isOutputActive ? 23.5 : ((isLast || isNextActive) ? outerRadius : innerRadius)
 
-                                    property real tlrAnim: tlr; Behavior on tlrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
-                                    property real trrAnim: trr; Behavior on trrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
-                                    property real blrAnim: blr; Behavior on blrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
-                                    property real brrAnim: brr; Behavior on brrAnim { NumberAnimation { duration: 300; easing.type: Easing.OutExpo } }
+                                    property real tlrAnim: tlr; Behavior on tlrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
+                                    property real trrAnim: trr; Behavior on trrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
+                                    property real blrAnim: blr; Behavior on blrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
+                                    property real brrAnim: brr; Behavior on brrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
 
                                     property color paintColor: manualItem.isOutputActive
                                         ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.18)
@@ -457,38 +526,23 @@ PluginComponent {
                                             : Qt.rgba(Theme.secondary.r, Theme.secondary.g, Theme.secondary.b, 0.15))
                                     Behavior on paintBorder { ColorAnimation { duration: 150 } }
 
-                                    onTlrAnimChanged: requestPaint()
-                                    onTrrAnimChanged: requestPaint()
-                                    onBlrAnimChanged: requestPaint()
-                                    onBrrAnimChanged: requestPaint()
-                                    onPaintColorChanged: requestPaint()
-                                    onPaintBorderChanged: requestPaint()
-                                    onWidthChanged: requestPaint()
-                                    onHeightChanged: requestPaint()
+                                    ShapePath {
+                                        fillColor: cardBg.paintColor
+                                        strokeColor: cardBg.paintBorder
+                                        strokeWidth: 1
+                                        startX: 0.5 + cardBg.tlrAnim; startY: 0.5
 
-                                    onPaint: {
-                                        var ctx = getContext("2d");
-                                        var x = 0.5, y = 0.5;
-                                        var w = width - 1, h = height - 1;
+                                        PathLine { x: cardBg.width - 0.5 - cardBg.trrAnim; y: 0.5 }
+                                        PathArc { x: cardBg.width - 0.5; y: 0.5 + cardBg.trrAnim; radiusX: cardBg.trrAnim; radiusY: cardBg.trrAnim; direction: PathArc.Clockwise }
                                         
-                                        ctx.reset();
-                                        ctx.beginPath();
-                                        ctx.moveTo(x + tlrAnim, y);
-                                        ctx.lineTo(x + w - trrAnim, y);
-                                        ctx.arcTo(x + w, y, x + w, y + trrAnim, trrAnim);
-                                        ctx.lineTo(x + w, y + h - brrAnim);
-                                        ctx.arcTo(x + w, y + h, x + w - brrAnim, y + h, brrAnim);
-                                        ctx.lineTo(x + blrAnim, y + h);
-                                        ctx.arcTo(x, y + h, x, y + h - blrAnim, blrAnim);
-                                        ctx.lineTo(x, y + tlrAnim);
-                                        ctx.arcTo(x, y, x + tlrAnim, y, tlrAnim);
-                                        ctx.closePath();
+                                        PathLine { x: cardBg.width - 0.5; y: cardBg.height - 0.5 - cardBg.brrAnim }
+                                        PathArc { x: cardBg.width - 0.5 - cardBg.brrAnim; y: cardBg.height - 0.5; radiusX: cardBg.brrAnim; radiusY: cardBg.brrAnim; direction: PathArc.Clockwise }
                                         
-                                        ctx.fillStyle = paintColor.toString();
-                                        ctx.fill();
-                                        ctx.strokeStyle = paintBorder.toString();
-                                        ctx.lineWidth = 1;
-                                        ctx.stroke();
+                                        PathLine { x: 0.5 + cardBg.blrAnim; y: cardBg.height - 0.5 }
+                                        PathArc { x: 0.5; y: cardBg.height - 0.5 - cardBg.blrAnim; radiusX: cardBg.blrAnim; radiusY: cardBg.blrAnim; direction: PathArc.Clockwise }
+                                        
+                                        PathLine { x: 0.5; y: 0.5 + cardBg.tlrAnim }
+                                        PathArc { x: 0.5 + cardBg.tlrAnim; y: 0.5; radiusX: cardBg.tlrAnim; radiusY: cardBg.tlrAnim; direction: PathArc.Clockwise }
                                     }
                                 }
 
@@ -590,7 +644,7 @@ PluginComponent {
             // Section 3: Saved Display Profiles
             StyledRect {
                 id: dmsProfilesSection
-                width: parent.width - (mainCol.inCC ? 32 : 0)
+                width: Math.max(0, parent.width - (mainCol.inCC ? 32 : 0))
                 anchors.horizontalCenter: parent.horizontalCenter
                 height: dmsProfilesCol.implicitHeight + Theme.spacingM * 2
                 visible: root.showDisplayProfiles

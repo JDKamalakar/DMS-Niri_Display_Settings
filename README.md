@@ -8,12 +8,12 @@ Quickly manage, toggle, and configure display outputs in the Niri Wayland compos
 
 Use the DMS CLI:
 ```bash
-dms plugins install niriDS
+dms plugins install niriDSA
 ```
 
 Or manually:
 ```bash
-git clone https://github.com/hthienloc/dms-niri-display-settings ~/.config/DankMaterialShell/plugins/niriDS
+git clone https://github.com/hthienloc/dms-niri-display-settings ~/.config/DankMaterialShell/plugins/niriDSA
 ```
 
 ## Features
@@ -25,7 +25,7 @@ git clone https://github.com/hthienloc/dms-niri-display-settings ~/.config/DankM
 
 ## IPC Commands
 
-Use `dms ipc call niriDS <command>` to control the display selector.
+Use `dms ipc call niriDSA <command>` to control the display selector.
 
 | Command | Description |
 |---------|-------------|
@@ -38,7 +38,7 @@ Use `dms ipc call niriDS <command>` to control the display selector.
 
 ```kdl
 binds {
-    Mod+P { spawn "dms" "ipc" "call" "niriDS" "toggle"; }
+    Mod+P { spawn "dms" "ipc" "call" "niriDSA" "toggle"; }
 }
 ```
 

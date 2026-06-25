@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Shapes
 
 import Quickshell
 import qs.Common
@@ -12,7 +13,7 @@ import qs.Modules.Settings.DisplayConfig
 DankModal {
     id: root
 
-    layerNamespace: "dms:plugins:niriDS"
+    layerNamespace: "dms:plugins:niriDSA"
     keepPopoutsOpen: true
 
 
@@ -46,13 +47,13 @@ DankModal {
     readonly property bool disableInternalOption: {
         const val = pluginData ? pluginData.disableInternalOption : undefined;
         if (val !== undefined) return val === true || val === "true";
-        const raw = SettingsData.getPluginSetting("niriDS", "disableInternalOption", false);
+        const raw = SettingsData.getPluginSetting("niriDSA", "disableInternalOption", false);
         return raw === true || raw === "true";
     }
     readonly property bool showDisplayProfiles: {
         const val = pluginData ? pluginData.showDisplayProfiles : undefined;
         if (val !== undefined) return val === true || val === "true";
-        const raw = SettingsData.getPluginSetting("niriDS", "showDisplayProfiles", false);
+        const raw = SettingsData.getPluginSetting("niriDSA", "showDisplayProfiles", false);
         return raw === true || raw === "true";
     }
 
@@ -60,7 +61,7 @@ DankModal {
         const _ = SettingsData.pluginSettings;
         const val = pluginData ? pluginData.backdropDim : undefined;
         if (val !== undefined) return parseFloat(val);
-        const raw = SettingsData.getPluginSetting("niriDS", "backdropDim", 0.2);
+        const raw = SettingsData.getPluginSetting("niriDSA", "backdropDim", 0.2);
         return parseFloat(raw);
     }
 
@@ -68,7 +69,7 @@ DankModal {
         const _ = SettingsData.pluginSettings;
         const val = pluginData ? pluginData.uiTransparency : undefined;
         if (val !== undefined) return parseFloat(val);
-        const raw = SettingsData.getPluginSetting("niriDS", "uiTransparency", 0.5);
+        const raw = SettingsData.getPluginSetting("niriDSA", "uiTransparency", 0.5);
         return parseFloat(raw);
     }
     readonly property var displayProfilesList: {
@@ -132,20 +133,18 @@ DankModal {
 
         property bool hovered: projMouse.containsMouse
 
-        Canvas {
+        Shape {
             id: projBg
             anchors.fill: parent
-            antialiasing: true
 
             property real tlr: projCard.tlr
+            Behavior on tlr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
             property real trr: projCard.trr
+            Behavior on trr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
             property real blr: projCard.blr
+            Behavior on blr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
             property real brr: projCard.brr
-
-            onTlrChanged: requestPaint()
-            onTrrChanged: requestPaint()
-            onBlrChanged: requestPaint()
-            onBrrChanged: requestPaint()
+            Behavior on brr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
 
             property color targetColor: isCardDisabled ? Theme.withAlpha(Theme.secondary, 0.02) : (isActive ? (projCard.hovered ? Theme.withAlpha(Theme.primary, 0.24) : Theme.withAlpha(Theme.primary, 0.18)) : (projCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04)))
             property color paintColor: targetColor
@@ -155,34 +154,23 @@ DankModal {
             property color paintBorder: targetBorder
             Behavior on paintBorder { ColorAnimation { duration: 250 } }
 
-            onPaintColorChanged: requestPaint()
-            onPaintBorderChanged: requestPaint()
-            onWidthChanged: requestPaint()
-            onHeightChanged: requestPaint()
+            ShapePath {
+                fillColor: projBg.paintColor
+                strokeColor: projBg.paintBorder
+                strokeWidth: isActive ? 2 : 1
+                startX: 1 + projBg.tlr; startY: 1
 
-            onPaint: {
-                var ctx = getContext("2d");
-                var x = 1, y = 1;
-                var w = width - 2, h = height - 2;
-
-                ctx.reset();
-                ctx.beginPath();
-                ctx.moveTo(x + tlr, y);
-                ctx.lineTo(x + w - trr, y);
-                ctx.arcTo(x + w, y, x + w, y + trr, trr);
-                ctx.lineTo(x + w, y + h - brr);
-                ctx.arcTo(x + w, y + h, x + w - brr, y + h, brr);
-                ctx.lineTo(x + blr, y + h);
-                ctx.arcTo(x, y + h, x, y + h - blr, blr);
-                ctx.lineTo(x, y + tlr);
-                ctx.arcTo(x, y, x + tlr, y, tlr);
-                ctx.closePath();
-
-                ctx.fillStyle = paintColor.toString();
-                ctx.fill();
-                ctx.strokeStyle = paintBorder.toString();
-                ctx.lineWidth = isActive ? 2 : 1;
-                ctx.stroke();
+                PathLine { x: projBg.width - 1 - projBg.trr; y: 1 }
+                PathArc { x: projBg.width - 1; y: 1 + projBg.trr; radiusX: projBg.trr; radiusY: projBg.trr; direction: PathArc.Clockwise }
+                
+                PathLine { x: projBg.width - 1; y: projBg.height - 1 - projBg.brr }
+                PathArc { x: projBg.width - 1 - projBg.brr; y: projBg.height - 1; radiusX: projBg.brr; radiusY: projBg.brr; direction: PathArc.Clockwise }
+                
+                PathLine { x: 1 + projBg.blr; y: projBg.height - 1 }
+                PathArc { x: 1; y: projBg.height - 1 - projBg.blr; radiusX: projBg.blr; radiusY: projBg.blr; direction: PathArc.Clockwise }
+                
+                PathLine { x: 1; y: 1 + projBg.tlr }
+                PathArc { x: 1 + projBg.tlr; y: 1; radiusX: projBg.tlr; radiusY: projBg.tlr; direction: PathArc.Clockwise }
             }
         }
 
@@ -235,7 +223,7 @@ DankModal {
             anchors.top: parent.top
             anchors.topMargin: Theme.spacingM
             anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width - Theme.spacingL * 2
+            width: Math.max(0, parent.width - Theme.spacingL * 2)
             spacing: Theme.spacingXS
 
             DankIcon {
@@ -282,7 +270,7 @@ DankModal {
 
                 RowLayout {
                     id: mirrorRouteLayout
-                    width: parent.width - 24
+                    width: Math.max(0, parent.width - 24)
                     anchors.centerIn: parent
                     spacing: 6
                     
@@ -373,27 +361,20 @@ DankModal {
         property real blr: isActive ? outerRadius : ((isLastRow && isLeftCol) ? outerRadius : innerRadius)
         property real brr: isActive ? outerRadius : ((isLastRow && isRightCol) ? outerRadius : innerRadius)
 
-        Canvas {
+        Shape {
             id: profBg
             anchors.fill: parent
-            antialiasing: true
 
             property real tlr: profCard.tlr
-            Behavior on tlr { NumberAnimation { duration: 250 } }
+            Behavior on tlr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
             property real trr: profCard.trr
-            Behavior on trr { NumberAnimation { duration: 250 } }
+            Behavior on trr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
             property real blr: profCard.blr
-            Behavior on blr { NumberAnimation { duration: 250 } }
+            Behavior on blr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
             property real brr: profCard.brr
-            Behavior on brr { NumberAnimation { duration: 250 } }
-
-            onTlrChanged: requestPaint()
-            onTrrChanged: requestPaint()
-            onBlrChanged: requestPaint()
-            onBrrChanged: requestPaint()
+            Behavior on brr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
 
             property bool isCardActive: profCard.isActive
-            onIsCardActiveChanged: requestPaint()
 
             property color targetColor: isCardActive ? (profCard.hovered ? Theme.withAlpha(Theme.primary, 0.24) : Theme.withAlpha(Theme.primary, 0.18)) : (profCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04))
             property color paintColor: targetColor
@@ -403,34 +384,23 @@ DankModal {
             property color paintBorder: targetBorder
             Behavior on paintBorder { ColorAnimation { duration: 250 } }
 
-            onPaintColorChanged: requestPaint()
-            onPaintBorderChanged: requestPaint()
-            onWidthChanged: requestPaint()
-            onHeightChanged: requestPaint()
+            ShapePath {
+                fillColor: profBg.paintColor
+                strokeColor: profBg.paintBorder
+                strokeWidth: isCardActive ? 2 : 1
+                startX: 1 + profBg.tlr; startY: 1
 
-            onPaint: {
-                var ctx = getContext("2d");
-                var x = 1, y = 1;
-                var w = width - 2, h = height - 2;
-
-                ctx.reset();
-                ctx.beginPath();
-                ctx.moveTo(x + tlr, y);
-                ctx.lineTo(x + w - trr, y);
-                ctx.arcTo(x + w, y, x + w, y + trr, trr);
-                ctx.lineTo(x + w, y + h - brr);
-                ctx.arcTo(x + w, y + h, x + w - brr, y + h, brr);
-                ctx.lineTo(x + blr, y + h);
-                ctx.arcTo(x, y + h, x, y + h - blr, blr);
-                ctx.lineTo(x, y + tlr);
-                ctx.arcTo(x, y, x + tlr, y, tlr);
-                ctx.closePath();
-
-                ctx.fillStyle = paintColor.toString();
-                ctx.fill();
-                ctx.strokeStyle = paintBorder.toString();
-                ctx.lineWidth = isCardActive ? 2 : 1;
-                ctx.stroke();
+                PathLine { x: profBg.width - 1 - profBg.trr; y: 1 }
+                PathArc { x: profBg.width - 1; y: 1 + profBg.trr; radiusX: profBg.trr; radiusY: profBg.trr; direction: PathArc.Clockwise }
+                
+                PathLine { x: profBg.width - 1; y: profBg.height - 1 - profBg.brr }
+                PathArc { x: profBg.width - 1 - profBg.brr; y: profBg.height - 1; radiusX: profBg.brr; radiusY: profBg.brr; direction: PathArc.Clockwise }
+                
+                PathLine { x: 1 + profBg.blr; y: profBg.height - 1 }
+                PathArc { x: 1; y: profBg.height - 1 - profBg.blr; radiusX: profBg.blr; radiusY: profBg.blr; direction: PathArc.Clockwise }
+                
+                PathLine { x: 1; y: 1 + profBg.tlr }
+                PathArc { x: 1 + profBg.tlr; y: 1; radiusX: profBg.tlr; radiusY: profBg.tlr; direction: PathArc.Clockwise }
             }
         }
 
@@ -525,52 +495,39 @@ DankModal {
         property real blr: isActive ? outerRadius : ((isLastRow && isLeftCol) ? outerRadius : innerRadius)
         property real brr: isActive ? outerRadius : ((isLastRow && isRightCol) ? outerRadius : innerRadius)
 
-        Canvas {
+        Shape {
             id: manualBg
             anchors.fill: parent
-            antialiasing: true
 
             property real tlr: manualCard.tlr
+            Behavior on tlr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
             property real trr: manualCard.trr
+            Behavior on trr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
             property real blr: manualCard.blr
+            Behavior on blr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
             property real brr: manualCard.brr
-
-            onTlrChanged: requestPaint()
-            onTrrChanged: requestPaint()
-            onBlrChanged: requestPaint()
-            onBrrChanged: requestPaint()
+            Behavior on brr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
 
             property color paintColor: isActive ? Theme.withAlpha(Theme.primary, 0.18) : (manualCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04))
             property color paintBorder: isActive ? Theme.primary : (manualCard.hovered ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.4) : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15))
 
-            onPaintColorChanged: requestPaint()
-            onPaintBorderChanged: requestPaint()
-            onWidthChanged: requestPaint()
-            onHeightChanged: requestPaint()
+            ShapePath {
+                fillColor: manualBg.paintColor
+                strokeColor: manualBg.paintBorder
+                strokeWidth: isActive ? 2 : 1
+                startX: 1 + manualBg.tlr; startY: 1
 
-            onPaint: {
-                var ctx = getContext("2d");
-                var x = 1, y = 1;
-                var w = width - 2, h = height - 2;
-
-                ctx.reset();
-                ctx.beginPath();
-                ctx.moveTo(x + tlr, y);
-                ctx.lineTo(x + w - trr, y);
-                ctx.arcTo(x + w, y, x + w, y + trr, trr);
-                ctx.lineTo(x + w, y + h - brr);
-                ctx.arcTo(x + w, y + h, x + w - brr, y + h, brr);
-                ctx.lineTo(x + blr, y + h);
-                ctx.arcTo(x, y + h, x, y + h - blr, blr);
-                ctx.lineTo(x, y + tlr);
-                ctx.arcTo(x, y, x + tlr, y, tlr);
-                ctx.closePath();
-
-                ctx.fillStyle = paintColor.toString();
-                ctx.fill();
-                ctx.strokeStyle = paintBorder.toString();
-                ctx.lineWidth = isActive ? 2 : 1;
-                ctx.stroke();
+                PathLine { x: manualBg.width - 1 - manualBg.trr; y: 1 }
+                PathArc { x: manualBg.width - 1; y: 1 + manualBg.trr; radiusX: manualBg.trr; radiusY: manualBg.trr; direction: PathArc.Clockwise }
+                
+                PathLine { x: manualBg.width - 1; y: manualBg.height - 1 - manualBg.brr }
+                PathArc { x: manualBg.width - 1 - manualBg.brr; y: manualBg.height - 1; radiusX: manualBg.brr; radiusY: manualBg.brr; direction: PathArc.Clockwise }
+                
+                PathLine { x: 1 + manualBg.blr; y: manualBg.height - 1 }
+                PathArc { x: 1; y: manualBg.height - 1 - manualBg.blr; radiusX: manualBg.blr; radiusY: manualBg.blr; direction: PathArc.Clockwise }
+                
+                PathLine { x: 1; y: 1 + manualBg.tlr }
+                PathArc { x: 1 + manualBg.tlr; y: 1; radiusX: manualBg.tlr; radiusY: manualBg.tlr; direction: PathArc.Clockwise }
             }
         }
 
@@ -612,7 +569,7 @@ DankModal {
             anchors.top: parent.top
             anchors.topMargin: Theme.spacingM
             anchors.horizontalCenter: parent.horizontalCenter
-            width: parent.width - Theme.spacingL * 2
+            width: Math.max(0, parent.width - Theme.spacingL * 2)
             spacing: Theme.spacingXS
             opacity: manualCard.isActive ? 1.0 : 0.6
 

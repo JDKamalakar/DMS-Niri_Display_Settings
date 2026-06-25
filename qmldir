@@ -1,4 +1,4 @@
-module dms.plugins.niriDS
+module dms.plugins.niriDSA
 singleton NiriDS NiriDisplaySettingsService.qml
 NiriDisplaySettingsModal NiriDisplaySettingsModal.qml
 NiriDisplaySettingsWidget NiriDisplaySettingsWidget.qml

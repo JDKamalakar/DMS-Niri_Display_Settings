@@ -45,32 +45,28 @@ Singleton {
 
     readonly property string mirrorSourceFriendly: {
         if (displays.length < 2) return "";
-        let source = displays.find(d => d.name === root.focusedOutputName);
-        if (!source) {
-            source = displays.find(d => isInternal(d)) || displays[0];
-        }
+        let target = displays.find(d => d.name === root.focusedOutputName);
+        if (!target) target = displays[0];
+        let source = displays.find(d => d.name !== target.name);
         return source ? source.friendlyName : "";
     }
 
     readonly property string mirrorTargetFriendly: {
         if (displays.length < 2) return "";
-        let source = displays.find(d => d.name === root.focusedOutputName);
-        if (!source) {
-            source = displays.find(d => isInternal(d)) || displays[0];
-        }
-        let target = displays.find(d => d.name !== source.name);
+        let target = displays.find(d => d.name === root.focusedOutputName);
+        if (!target) target = displays[0];
         return target ? target.friendlyName : "";
     }
 
     function detectFocusedOutput(callback): void {
-        Proc.runCommand("niriDS:focusedOutput", ["niri", "msg", "focused-output"], (output, exitCode) => {
+        Proc.runCommand("niriDSA:focusedOutput", ["niri", "msg", "focused-output"], (output, exitCode) => {
             if (exitCode === 0) {
                 let cleaned = output.replace(/^(Output\s+|Focused\s+output:\s*)/i, "").trim();
                 let parts = cleaned.split(/[\s(]/);
                 let name = parts[0].trim();
                 if (name) {
                     root.focusedOutputName = name;
-                    console.log("niriDS: Resolved focused output name:", root.focusedOutputName);
+                    console.log("niriDSA: Resolved focused output name:", root.focusedOutputName);
                 }
             }
             if (callback) callback();
@@ -88,12 +84,12 @@ Singleton {
                 const pid = parseInt(trimmed);
                 if (!isNaN(pid) && pid > 0) {
                     root.wlMirrorPid = pid;
-                    console.log("niriDS: Started wl-mirror with PID:", pid);
+                    console.log("niriDSA: Started wl-mirror with PID:", pid);
                     Qt.callLater(() => {
                         root.setDisplays();
                     });
                 } else if (trimmed.length > 0) {
-                    console.warn("niriDS: wl-mirror output:", trimmed);
+                    console.warn("niriDSA: wl-mirror output:", trimmed);
                 }
             }
         }
@@ -146,28 +142,28 @@ Singleton {
 
         let preferred = "";
         try {
-            preferred = PluginService.loadPluginData("niriDS", "fallbackDisplay", "");
+            preferred = PluginService.loadPluginData("niriDSA", "fallbackDisplay", "");
         } catch (e) {}
 
         if (preferred && display.name === preferred) return true;
 
-        return isInternalName(display.name);
     }
 
     function setDisplays() {
-        Proc.runCommand("niriDS:checkMirror", ["pgrep", "-f", "wl-mirror"], (out, code) => {
-            const running = (code === 0 && out.trim().length > 0);
-            if (running) {
-                const pid = parseInt(out.trim().split("\n")[0]);
+        Proc.runCommand("niriDSA:checkMirror", ["pgrep", "-x", "wl-mirror"], (out, code) => {
+            const lines = out.trim().split("\n");
+            let foundPid = 0;
+            for (let i = 0; i < lines.length; i++) {
+                const pid = parseInt(lines[i].trim());
                 if (!isNaN(pid) && pid > 0) {
-                    root.wlMirrorPid = pid;
+                    foundPid = pid;
+                    break;
                 }
-            } else {
-                root.wlMirrorPid = 0;
             }
+            root.wlMirrorPid = foundPid;
         });
 
-        Proc.runCommand("niriDS:getOutputs", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
+        Proc.runCommand("niriDSA:getOutputs", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
             if (exitCode !== 0) return;
             try {
                 const parsed = JSON.parse(output);
@@ -194,7 +190,7 @@ Singleton {
                 arr.forEach(d => delete d.isInternal);
                 root.displays = arr;
             } catch (e) {
-                console.warn("niriDS: setDisplays failed:", e);
+                console.warn("niriDSA: setDisplays failed:", e);
             }
         });
     }
@@ -203,7 +199,7 @@ Singleton {
         if (!display || !display.name) return;
         stopMirror();
         const action = display.disabled ? "on" : "off";
-        Proc.runCommand("niriDS:toggle", ["niri", "msg", "output", display.name, action], (out, code) => {
+        Proc.runCommand("niriDSA:toggle", ["niri", "msg", "output", display.name, action], (out, code) => {
             if (code === 0) {
                 delayedRefreshTimer.start();
             }
@@ -224,7 +220,7 @@ Singleton {
                     callback();
                     return;
                 }
-                Proc.runCommand("niriDS:enable", ["niri", "msg", "output", toProcess[i].name, "on"], () => enableNext(i + 1));
+                Proc.runCommand("niriDSA:enable", ["niri", "msg", "output", toProcess[i].name, "on"], () => enableNext(i + 1));
             }
             enableNext(0);
         }
@@ -235,7 +231,7 @@ Singleton {
                     callback();
                     return;
                 }
-                Proc.runCommand("niriDS:disable", ["niri", "msg", "output", external[i].name, "off"], () => disableNext(i + 1));
+                Proc.runCommand("niriDSA:disable", ["niri", "msg", "output", external[i].name, "off"], () => disableNext(i + 1));
             }
             disableNext(0);
         }
@@ -246,7 +242,7 @@ Singleton {
                     callback();
                     return;
                 }
-                Proc.runCommand("niriDS:disable", ["niri", "msg", "output", internal[i].name, "off"], () => disableNext(i + 1));
+                Proc.runCommand("niriDSA:disable", ["niri", "msg", "output", internal[i].name, "off"], () => disableNext(i + 1));
             }
             disableNext(0);
         }
@@ -281,11 +277,11 @@ Singleton {
     }
 
     function enableInternalDisplay(): void {
-        Proc.runCommand("niriDS:fallbackCheck", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
+        Proc.runCommand("niriDSA:fallbackCheck", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
             if (exitCode !== 0) {
-                const pref = PluginService?.loadPluginData("niriDS", "fallbackDisplay", "") || "";
+                const pref = PluginService?.loadPluginData("niriDSA", "fallbackDisplay", "") || "";
                 if (pref) {
-                    Proc.runCommand("niriDS:recover", ["niri", "msg", "output", pref, "on"], () => setDisplays());
+                    Proc.runCommand("niriDSA:recover", ["niri", "msg", "output", pref, "on"], () => setDisplays());
                 }
                 return;
             }
@@ -294,16 +290,16 @@ Singleton {
                 const parsed = JSON.parse(output);
                 for (const name in parsed) {
                     if (isInternalName(name)) {
-                        Proc.runCommand("niriDS:recover", ["niri", "msg", "output", name, "on"], () => setDisplays());
+                        Proc.runCommand("niriDSA:recover", ["niri", "msg", "output", name, "on"], () => setDisplays());
                         return;
                     }
                 }
-                const pref = PluginService?.loadPluginData("niriDS", "fallbackDisplay", "") || "";
+                const pref = PluginService?.loadPluginData("niriDSA", "fallbackDisplay", "") || "";
                 if (pref) {
-                    Proc.runCommand("niriDS:recover", ["niri", "msg", "output", pref, "on"], () => setDisplays());
+                    Proc.runCommand("niriDSA:recover", ["niri", "msg", "output", pref, "on"], () => setDisplays());
                 }
             } catch (e) {
-                console.warn("niriDS: enableInternalDisplay failed:", e);
+                console.warn("niriDSA: enableInternalDisplay failed:", e);
             }
         });
     }
@@ -318,23 +314,23 @@ Singleton {
     function startMirrorProcess(): void {
         if (displays.length < 2) return;
         
-        let source = displays.find(d => d.name === root.focusedOutputName);
-        let target = displays.find(d => d.name !== root.focusedOutputName);
-        
+        // Match displayMirror plugin logic: target is focused output, source is the other output
+        let target = displays.find(d => d.name === root.focusedOutputName);
+        if (!target) {
+            target = displays[0];
+        }
+        let source = displays.find(d => d.name !== target.name);
         if (!source) {
-            source = displays.find(d => isInternal(d)) || displays[0];
-            target = displays.find(d => d.name !== source.name) || displays[1];
+            source = displays[1];
         }
         
         if (!source || !target) {
-            console.warn("niriDS: Cannot mirror, source or target display is missing. Displays:", JSON.stringify(displays));
+            console.warn("niriDSA: Cannot mirror, source or target display is missing. Displays:", JSON.stringify(displays));
             return;
         }
         
-        console.log("niriDS: Launching wl-mirror from source:", source.name, "to target:", target.name);
-        
         // Launch wl-mirror in background detaching via sh, redirecting stderr to stdout for debugging, and capture its PID
-        const cmd = "wl-mirror --fullscreen-output \"" + target.name + "\" \"" + source.name + "\" 2>&1 & echo $!";
+        const cmd = "wl-mirror --fullscreen \"" + source.name + "\" >/dev/null 2>&1 & echo $!";
         mirrorLauncher.command = ["sh", "-c", cmd];
         mirrorLauncher.running = true;
     }

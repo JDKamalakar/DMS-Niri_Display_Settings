@@ -24,7 +24,7 @@ StyledRect {
 
     Column {
         id: contentColumn
-        width: parent.width - (Theme.spacingL * 2)
+        width: Math.max(0, parent.width - (Theme.spacingL * 2))
         anchors.centerIn: parent
         spacing: Theme.spacingM
     }

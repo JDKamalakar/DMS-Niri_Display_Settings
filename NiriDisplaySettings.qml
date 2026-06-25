@@ -6,7 +6,7 @@ import qs.Modules.Plugins
 
 PluginSettings {
     id: root
-    pluginId: "niriDS"
+    pluginId: "niriDSA"
 
     SettingsCard {
         StyledText {
@@ -328,22 +328,22 @@ PluginSettings {
 
         CopyBox {
             label: I18n.tr("Toggle Modal Command")
-            text: "dms ipc call niriDS toggle"
+            text: "dms ipc call niriDSA toggle"
         }
 
         CopyBox {
             label: I18n.tr("Open Modal Command")
-            text: "dms ipc call niriDS open"
+            text: "dms ipc call niriDSA open"
         }
 
         CopyBox {
             label: I18n.tr("Close Modal Command")
-            text: "dms ipc call niriDS close"
+            text: "dms ipc call niriDSA close"
         }
 
         CopyBox {
             label: I18n.tr("Apply Profile Command")
-            text: "dms ipc call niriDS apply internal_only"
+            text: "dms ipc call niriDSA apply internal_only"
         }
 
         StyledText {
@@ -366,7 +366,7 @@ PluginSettings {
 
         CopyBox {
             label: I18n.tr("Niri Bind Configuration")
-            text: "Mod+P { spawn \"dms\" \"ipc\" \"call\" \"niriDS\" \"toggle\"; }"
+            text: "Mod+P { spawn \"dms\" \"ipc\" \"call\" \"niriDSA\" \"toggle\"; }"
         }
     }
 }
