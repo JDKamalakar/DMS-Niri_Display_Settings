@@ -26,10 +26,10 @@ Item {
         property real innerRadius: 6
         property real outerRadius: 12
         
-        property real tlr: card.isActive ? 21.5 : (card.isFirst ? outerRadius : innerRadius)
-        property real trr: card.isActive ? 21.5 : (card.isFirst ? outerRadius : innerRadius)
-        property real blr: card.isActive ? 21.5 : (card.isLast ? outerRadius : innerRadius)
-        property real brr: card.isActive ? 21.5 : (card.isLast ? outerRadius : innerRadius)
+        property real tlr: card.isActive ? (height / 2) - 0.5 : (card.isFirst ? outerRadius : innerRadius)
+        property real trr: card.isActive ? (height / 2) - 0.5 : (card.isFirst ? outerRadius : innerRadius)
+        property real blr: card.isActive ? (height / 2) - 0.5 : (card.isLast ? outerRadius : innerRadius)
+        property real brr: card.isActive ? (height / 2) - 0.5 : (card.isLast ? outerRadius : innerRadius)
 
         property real tlrAnim: tlr; Behavior on tlrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
         property real trrAnim: trr; Behavior on trrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
@@ -83,7 +83,7 @@ Item {
             size: 18
             color: card.disabled ? Theme.withAlpha(Theme.surfaceText, 0.4) : (card.isActive ? Theme.primary : Theme.surfaceVariantText)
             Layout.alignment: Qt.AlignVCenter
-            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on color { ColorAnimation { duration: 150 } }
         }
 
         StyledText {
@@ -93,7 +93,7 @@ Item {
             color: card.disabled ? Theme.withAlpha(Theme.surfaceText, 0.4) : (card.isActive ? Theme.primary : Theme.surfaceText)
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            Behavior on color { ColorAnimation { duration: 200 } }
+            Behavior on color { ColorAnimation { duration: 150 } }
         }
 
         DankIcon { 
@@ -101,8 +101,8 @@ Item {
             scale: card.isActive ? 1.0 : 0.0
             opacity: card.isActive ? 1.0 : 0.0
             visible: card.isActive
-            Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
-            Behavior on opacity { NumberAnimation { duration: 200 } }
+            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+            Behavior on opacity { NumberAnimation { duration: 150 } }
         }
 
         Rectangle {

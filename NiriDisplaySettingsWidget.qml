@@ -307,7 +307,7 @@ PluginComponent {
                         id: refreshBtnItem
                         width: 38; height: 38
                         Layout.alignment: Qt.AlignVCenter
-                        scale: refreshArea.pressed ? 0.9 : (refreshArea.containsMouse ? 1.1 : 1.0)
+                        scale: refreshArea.pressed ? 0.9 : (refreshArea.containsMouse ? 1.05 : 1.0)
                         Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
 
                         property bool isLoading: false
@@ -352,10 +352,11 @@ PluginComponent {
                             SequentialAnimation {
                                 id: hoverSpinAnim
                                 running: refreshArea.containsMouse && !refreshBtnItem.isLoading
+                                loops: Animation.Infinite
                                 onStopped: refreshIcon.rotation = 0
-                                NumberAnimation { target: refreshIcon; property: "rotation"; from: 0; to: 45; duration: 200; easing.type: Easing.OutQuad }
-                                NumberAnimation { target: refreshIcon; property: "rotation"; from: 45; to: -45; duration: 400; easing.type: Easing.InOutQuad }
-                                NumberAnimation { target: refreshIcon; property: "rotation"; from: -45; to: 0; duration: 200; easing.type: Easing.InQuad }
+                                NumberAnimation { target: refreshIcon; property: "rotation"; from: 0; to: 8; duration: 200; easing.type: Easing.OutQuad }
+                                NumberAnimation { target: refreshIcon; property: "rotation"; from: 8; to: -8; duration: 400; easing.type: Easing.InOutQuad }
+                                NumberAnimation { target: refreshIcon; property: "rotation"; from: -8; to: 0; duration: 200; easing.type: Easing.InQuad }
                             }
 
                             RotationAnimation on rotation {
@@ -502,10 +503,10 @@ PluginComponent {
                                     property bool isPrevActive: index > 0 && root.filteredDisplays && root.filteredDisplays[index - 1] && !root.filteredDisplays[index - 1].disabled
                                     property bool isNextActive: root.filteredDisplays ? (index < root.filteredDisplays.length - 1 && root.filteredDisplays[index + 1] && !root.filteredDisplays[index + 1].disabled) : false
 
-                                    property real tlr: manualItem.isOutputActive ? 23.5 : ((isFirst || isPrevActive) ? outerRadius : innerRadius)
-                                    property real trr: manualItem.isOutputActive ? 23.5 : ((isFirst || isPrevActive) ? outerRadius : innerRadius)
-                                    property real blr: manualItem.isOutputActive ? 23.5 : ((isLast || isNextActive) ? outerRadius : innerRadius)
-                                    property real brr: manualItem.isOutputActive ? 23.5 : ((isLast || isNextActive) ? outerRadius : innerRadius)
+                                    property real tlr: manualItem.isOutputActive ? (manualItem.height / 2) - 0.5 : ((isFirst || isPrevActive) ? outerRadius : innerRadius)
+                                    property real trr: manualItem.isOutputActive ? (manualItem.height / 2) - 0.5 : ((isFirst || isPrevActive) ? outerRadius : innerRadius)
+                                    property real blr: manualItem.isOutputActive ? (manualItem.height / 2) - 0.5 : ((isLast || isNextActive) ? outerRadius : innerRadius)
+                                    property real brr: manualItem.isOutputActive ? (manualItem.height / 2) - 0.5 : ((isLast || isNextActive) ? outerRadius : innerRadius)
 
                                     property real tlrAnim: tlr; Behavior on tlrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
                                     property real trrAnim: trr; Behavior on trrAnim { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
@@ -585,11 +586,12 @@ PluginComponent {
                                         width: 8; height: 8; radius: 4
                                         anchors.centerIn: parent
                                         color: manualItem.isOutputActive ? Theme.success : Theme.error
-                                        Behavior on color { ColorAnimation { duration: 300; easing.type: Easing.OutExpo } }
+                                        Behavior on color { ColorAnimation { duration: 150 } }
                                         visible: !manualItem.isLoading
                                     }
 
                                     DankIcon {
+                                        id: spinnerIcon
                                         name: "cached"
                                         size: 14
                                         color: Theme.surfaceVariant
@@ -600,6 +602,7 @@ PluginComponent {
                                             from: 0; to: 360
                                             duration: 600
                                             running: manualItem.isLoading
+                                            onStopped: spinnerIcon.rotation = 0
                                         }
                                     }
                                 }

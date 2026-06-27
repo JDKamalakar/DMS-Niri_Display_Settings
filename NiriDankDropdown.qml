@@ -173,7 +173,7 @@ Item {
                 text: root.currentValue !== "" ? root.currentValue : root.emptyText
                 font.pixelSize: Theme.fontSizeMedium
                 color: root.currentValue !== "" ? Theme.surfaceText : Theme.outline
-                width: contentRow.width - (contentRow.children[0].visible ? contentRow.children[0].width + contentRow.spacing : 0)
+                width: Math.max(0, contentRow.width - (contentRow.children[0].visible ? contentRow.children[0].width + contentRow.spacing : 0))
                 elide: Text.ElideRight
                 wrapMode: Text.NoWrap
                 horizontalAlignment: Text.AlignLeft
@@ -382,7 +382,7 @@ Item {
                     id: listView
 
                     width: parent.width
-                    height: parent.height - (root.enableFuzzySearch ? searchContainer.height + Theme.spacingXS : 0) - (root.options.length === 0 && root.emptyText !== "" ? 32 : 0)
+                    height: Math.max(0, parent.height - (root.enableFuzzySearch ? searchContainer.height + Theme.spacingXS : 0) - (root.options.length === 0 && root.emptyText !== "" ? 32 : 0))
                     clip: true
                     visible: root.options.length > 0
                     model: ScriptModel {

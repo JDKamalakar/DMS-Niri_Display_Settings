@@ -61,6 +61,142 @@ PluginSettings {
         }
     }
 
+    Component {
+        id: sliderSettingComponent
+        Column {
+            width: parent ? parent.width : 0
+            spacing: Theme.spacingS
+
+            property string iconName: parent ? parent.iconName : ""
+            property string labelText: parent ? parent.labelText : ""
+            property string descriptionText: parent ? parent.descriptionText : ""
+            property int sliderDefaultValue: parent ? parent.sliderDefaultValue : 0
+            property string sliderSettingKey: parent ? parent.sliderSettingKey : ""
+
+            function loadValue() {
+                mySlider.loadValue();
+            }
+
+            RowLayout {
+                width: parent.width
+                spacing: Theme.spacingM
+
+                DankIcon {
+                    name: iconName
+                    size: 22
+                    Layout.alignment: Qt.AlignVCenter
+                    opacity: 0.8
+                }
+
+                Column {
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: Theme.spacingXXS
+                    StyledText {
+                        text: labelText
+                        width: parent.width
+                        font.weight: Font.Medium
+                        color: Theme.surfaceText
+                    }
+                    StyledText {
+                        text: descriptionText
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                Rectangle {
+                    id: resetBtn
+                    width: 32; height: 32
+                    radius: Theme.cornerRadius
+                    Layout.alignment: Qt.AlignVCenter
+                    color: resetMa.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
+                    border.color: resetMa.containsMouse ? Theme.primary : Theme.outline
+                    border.width: 1
+                    opacity: mySlider.value !== mySlider.defaultValue ? (resetMa.containsMouse ? 1.0 : 0.9) : 0.0
+                    visible: opacity > 0
+                    scale: resetMa.pressed ? 0.9 : (resetMa.containsMouse ? 1.05 : 1.0)
+                    
+                    Behavior on color { ColorAnimation { duration: 150 } }
+                    Behavior on border.color { ColorAnimation { duration: 150 } }
+                    Behavior on opacity { NumberAnimation { duration: 150 } }
+                    Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+
+                    DankRipple { 
+                        id: resetRip
+                        anchors.fill: parent
+                        cornerRadius: parent.radius
+                        rippleColor: Theme.primary 
+                    }
+
+                    DankIcon {
+                        id: resetIcon
+                        name: "restart_alt"
+                        size: 18
+                        anchors.centerIn: parent
+                        color: resetMa.containsMouse ? Theme.primary : Theme.surfaceVariantText
+                        Behavior on color { ColorAnimation { duration: 150 } }
+
+                        SequentialAnimation {
+                            running: resetMa.containsMouse
+                            loops: Animation.Infinite
+                            onStopped: resetIcon.rotation = 0
+                            NumberAnimation { target: resetIcon; property: "rotation"; from: 0; to: 8; duration: 200; easing.type: Easing.OutQuad }
+                            NumberAnimation { target: resetIcon; property: "rotation"; from: 8; to: -8; duration: 400; easing.type: Easing.InOutQuad }
+                            NumberAnimation { target: resetIcon; property: "rotation"; from: -8; to: 0; duration: 200; easing.type: Easing.InQuad }
+                        }
+                    }
+
+                    MouseArea {
+                        id: resetMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            resetAnim.restart();
+                            root.saveValue(sliderSettingKey, sliderDefaultValue / 100);
+                        }
+                        onPressed: (m) => resetRip.trigger(m.x, m.y)
+                    }
+                }
+            }
+
+            NumberAnimation {
+                id: resetAnim
+                target: mySlider
+                property: "value"
+                to: mySlider.defaultValue
+                duration: 300
+                easing.type: Easing.OutCubic
+            }
+
+            DankSlider {
+                id: mySlider
+                property int defaultValue: sliderDefaultValue
+                property string settingKey: sliderSettingKey
+                width: parent.width
+                minimum: 0
+                maximum: 100
+                step: 1
+                unit: "%"
+                
+                function loadValue() {
+                    if (settingKey === "") return;
+                    const savedVal = root.loadValue(settingKey, defaultValue / 100);
+                    value = Math.round(parseFloat(savedVal) * 100);
+                }
+                Component.onCompleted: loadValue()
+                onSettingKeyChanged: loadValue()
+                onSliderValueChanged: newValue => {
+                    value = newValue;
+                    root.saveValue(settingKey, newValue / 100);
+                }
+            }
+        }
+    }
+
     SettingsCard {
         StyledText {
             width: parent.width
@@ -71,240 +207,38 @@ PluginSettings {
         }
 
         // --- Backdrop Dim Setting Row ---
-        Column {
+        Loader {
             id: dimSettingRow
             width: parent.width
-            spacing: Theme.spacingS
+            sourceComponent: sliderSettingComponent
+            asynchronous: true
+            
+            property string iconName: "palette"
+            property string labelText: I18n.tr("Backdrop Dim")
+            property string descriptionText: I18n.tr("Choose the backdrop overlay dim level for the fullscreen settings modal")
+            property int sliderDefaultValue: 20
+            property string sliderSettingKey: "backdropDim"
 
             function loadValue() {
-                dimSlider.loadValue();
-            }
-
-            RowLayout {
-                width: parent.width
-                spacing: Theme.spacingM
-
-                DankIcon {
-                    name: "palette"
-                    size: 22
-                    Layout.alignment: Qt.AlignVCenter
-                    opacity: 0.8
-                }
-
-                Column {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: Theme.spacingXXS
-                    StyledText {
-                        text: I18n.tr("Backdrop Dim")
-                        width: parent.width
-                        font.weight: Font.Medium
-                        color: Theme.surfaceText
-                    }
-                    StyledText {
-                        text: I18n.tr("Choose the backdrop overlay dim level for the fullscreen settings modal")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-                Rectangle {
-                    id: dimResetBtn
-                    width: 32; height: 32
-                    radius: Theme.cornerRadius
-                    Layout.alignment: Qt.AlignVCenter
-                    color: dimResetMa.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
-                    border.color: dimResetMa.containsMouse ? Theme.primary : Theme.outline
-                    border.width: 1
-                    opacity: dimSlider.value !== dimSlider.defaultValue ? (dimResetMa.containsMouse ? 1.0 : 0.9) : 0.0
-                    visible: opacity > 0
-                    scale: dimResetMa.containsMouse ? 1.1 : 1.0
-                    
-                    Behavior on color { ColorAnimation { duration: 150 } }
-                    Behavior on border.color { ColorAnimation { duration: 150 } }
-                    Behavior on opacity { NumberAnimation { duration: 250 } }
-                    Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
-
-                    DankRipple { 
-                        id: dimRip
-                        anchors.fill: parent
-                        cornerRadius: parent.radius
-                        rippleColor: Theme.primary 
-                    }
-
-                    DankIcon {
-                        name: "restart_alt"
-                        size: 18
-                        anchors.centerIn: parent
-                        color: dimResetMa.containsMouse ? Theme.primary : Theme.surfaceVariantText
-                        rotation: dimResetMa.containsMouse ? 90 : 0
-                        Behavior on rotation { NumberAnimation { duration: 450; easing.type: Easing.OutBack } }
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                    }
-
-                    MouseArea {
-                        id: dimResetMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            dimResetAnim.restart();
-                            root.saveValue(dimSlider.settingKey, dimSlider.defaultValue / 100);
-                        }
-                        onPressed: (m) => dimRip.trigger(m.x, m.y)
-                    }
-                }
-            }
-
-            NumberAnimation {
-                id: dimResetAnim
-                target: dimSlider
-                property: "value"
-                to: dimSlider.defaultValue
-                duration: 300
-                easing.type: Easing.OutCubic
-            }
-
-            DankSlider {
-                id: dimSlider
-                property int defaultValue: 20
-                property string settingKey: "backdropDim"
-                width: parent.width
-                minimum: 0
-                maximum: 100
-                step: 1
-                unit: "%"
-                
-                function loadValue() {
-                    const savedVal = root.loadValue(settingKey, defaultValue / 100);
-                    value = Math.round(parseFloat(savedVal) * 100);
-                }
-                Component.onCompleted: loadValue()
-                onSliderValueChanged: newValue => {
-                    value = newValue;
-                    root.saveValue(settingKey, newValue / 100);
-                }
+                if (item) item.loadValue();
             }
         }
 
         // --- UI Transparency Setting Row ---
-        Column {
+        Loader {
             id: transSettingRow
             width: parent.width
-            spacing: Theme.spacingS
+            sourceComponent: sliderSettingComponent
+            asynchronous: true
+            
+            property string iconName: "opacity"
+            property string labelText: I18n.tr("UI Transparency")
+            property string descriptionText: I18n.tr("Choose the UI transparency level for the settings modal cards")
+            property int sliderDefaultValue: 50
+            property string sliderSettingKey: "uiTransparency"
 
             function loadValue() {
-                transSlider.loadValue();
-            }
-
-            RowLayout {
-                width: parent.width
-                spacing: Theme.spacingM
-
-                DankIcon {
-                    name: "opacity"
-                    size: 22
-                    Layout.alignment: Qt.AlignVCenter
-                    opacity: 0.8
-                }
-
-                Column {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: Theme.spacingXXS
-                    StyledText {
-                        text: I18n.tr("UI Transparency")
-                        width: parent.width
-                        font.weight: Font.Medium
-                        color: Theme.surfaceText
-                    }
-                    StyledText {
-                        text: I18n.tr("Choose the UI transparency level for the settings modal cards")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-                Rectangle {
-                    id: transResetBtn
-                    width: 32; height: 32
-                    radius: Theme.cornerRadius
-                    Layout.alignment: Qt.AlignVCenter
-                    color: transResetMa.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
-                    border.color: transResetMa.containsMouse ? Theme.primary : Theme.outline
-                    border.width: 1
-                    opacity: transSlider.value !== transSlider.defaultValue ? (transResetMa.containsMouse ? 1.0 : 0.9) : 0.0
-                    visible: opacity > 0
-                    scale: transResetMa.containsMouse ? 1.1 : 1.0
-                    
-                    Behavior on color { ColorAnimation { duration: 150 } }
-                    Behavior on border.color { ColorAnimation { duration: 150 } }
-                    Behavior on opacity { NumberAnimation { duration: 250 } }
-                    Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
-
-                    DankRipple { 
-                        id: transRip
-                        anchors.fill: parent
-                        cornerRadius: parent.radius
-                        rippleColor: Theme.primary 
-                    }
-
-                    DankIcon {
-                        name: "restart_alt"
-                        size: 18
-                        anchors.centerIn: parent
-                        color: transResetMa.containsMouse ? Theme.primary : Theme.surfaceVariantText
-                        rotation: transResetMa.containsMouse ? 90 : 0
-                        Behavior on rotation { NumberAnimation { duration: 450; easing.type: Easing.OutBack } }
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                    }
-
-                    MouseArea {
-                        id: transResetMa
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            transResetAnim.restart();
-                            root.saveValue(transSlider.settingKey, transSlider.defaultValue / 100);
-                        }
-                        onPressed: (m) => transRip.trigger(m.x, m.y)
-                    }
-                }
-            }
-
-            NumberAnimation {
-                id: transResetAnim
-                target: transSlider
-                property: "value"
-                to: transSlider.defaultValue
-                duration: 300
-                easing.type: Easing.OutCubic
-            }
-
-            DankSlider {
-                id: transSlider
-                property int defaultValue: 50
-                property string settingKey: "uiTransparency"
-                width: parent.width
-                minimum: 0
-                maximum: 100
-                step: 1
-                unit: "%"
-                
-                function loadValue() {
-                    const savedVal = root.loadValue(settingKey, defaultValue / 100);
-                    value = Math.round(parseFloat(savedVal) * 100);
-                }
-                Component.onCompleted: loadValue()
-                onSliderValueChanged: newValue => {
-                    value = newValue;
-                    root.saveValue(settingKey, newValue / 100);
-                }
+                if (item) item.loadValue();
             }
         }
     }

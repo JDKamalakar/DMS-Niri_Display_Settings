@@ -118,7 +118,7 @@ DankModal {
         property bool isCardDisabled: false
         signal clicked()
 
-        width: (parent.width - Theme.spacingS) / 2
+        width: Math.max(0, (parent.width - Theme.spacingS) / 2)
         height: 140
         opacity: isCardDisabled ? 0.45 : 1.0
 
@@ -126,10 +126,10 @@ DankModal {
         property real innerRadius: 6
         property real outerRadius: Theme.cornerRadius * 1.5
 
-        property real tlr: isActive ? outerRadius : (index === 0 ? outerRadius : innerRadius)
-        property real trr: isActive ? outerRadius : (index === 1 ? outerRadius : innerRadius)
-        property real blr: isActive ? outerRadius : (index === 2 ? outerRadius : innerRadius)
-        property real brr: isActive ? outerRadius : ((index === 3 || (index === 2 && root.disableInternalOption)) ? outerRadius : innerRadius)
+        property real tlr: isActive ? outerRadius + 8 : (index === 0 ? outerRadius : innerRadius)
+        property real trr: isActive ? outerRadius + 8 : (index === 1 ? outerRadius : innerRadius)
+        property real blr: isActive ? outerRadius + 8 : (index === 2 ? outerRadius : innerRadius)
+        property real brr: isActive ? outerRadius + 8 : ((index === 3 || (index === 2 && root.disableInternalOption)) ? outerRadius : innerRadius)
 
         property bool hovered: projMouse.containsMouse
 
@@ -148,11 +148,11 @@ DankModal {
 
             property color targetColor: isCardDisabled ? Theme.withAlpha(Theme.secondary, 0.02) : (isActive ? (projCard.hovered ? Theme.withAlpha(Theme.primary, 0.24) : Theme.withAlpha(Theme.primary, 0.18)) : (projCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04)))
             property color paintColor: targetColor
-            Behavior on paintColor { ColorAnimation { duration: 250 } }
+            Behavior on paintColor { ColorAnimation { duration: 150 } }
             
-            property color targetBorder: isCardDisabled ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.05) : (isActive ? Theme.primary : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15))
+            property color targetBorder: isCardDisabled ? Theme.withAlpha(Theme.secondary, 0.05) : (isActive ? Theme.withAlpha(Theme.primary, 0.6) : (projCard.hovered ? Theme.withAlpha(Theme.primary, 0.4) : Theme.withAlpha(Theme.secondary, 0.15)))
             property color paintBorder: targetBorder
-            Behavior on paintBorder { ColorAnimation { duration: 250 } }
+            Behavior on paintBorder { ColorAnimation { duration: 150 } }
 
             ShapePath {
                 fillColor: projBg.paintColor
@@ -232,9 +232,9 @@ DankModal {
                 size: 32
                 color: projCard.isActive ? Theme.primary : Theme.surfaceText
                 anchors.horizontalCenter: parent.horizontalCenter
-                scale: projCard.isActive ? (projCard.hovered ? 1.15 : 1.05) : (projCard.hovered ? 1.15 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
-                Behavior on color { ColorAnimation { duration: 250 } }
+                scale: projCard.isActive ? (projCard.hovered ? 1.05 : 1.0) : (projCard.hovered ? 1.05 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+                Behavior on color { ColorAnimation { duration: 150 } }
             }
 
             StyledText {
@@ -260,7 +260,7 @@ DankModal {
             // Mirror Routing Chip (replaces description for Mirror card)
             Rectangle {
                 visible: projCard.index === 2 && !!(NiriDS.mirrorSourceFriendly && NiriDS.mirrorTargetFriendly)
-                width: Math.min(parent.width - Theme.spacingS * 2, mirrorRouteLayout.implicitWidth + 24)
+                width: Math.max(0, Math.min(parent.width - Theme.spacingS * 2, mirrorRouteLayout.implicitWidth + 24))
                 height: mirrorRouteLayout.implicitHeight + 8
                 radius: 10
                 color: projCard.isActive ? Theme.withAlpha(Theme.success, 0.15) : Theme.withAlpha(Theme.surfaceText, 0.06)
@@ -319,7 +319,7 @@ DankModal {
         property bool isOddLayout: totalCount % 2 === 1 && totalCount > 1
         property bool isSpan2: isOddLayout && cardIndex === 0
 
-        width: isSpan2 ? parent.width : (parent.width - Theme.spacingS) / 2
+        width: Math.max(0, isSpan2 ? parent.width : (parent.width - Theme.spacingS) / 2)
         height: 54
         
         property bool hovered: profMouse.containsMouse
@@ -356,10 +356,10 @@ DankModal {
         property bool isRightCol: col === 1 || isSpan2
 
         // Active card gets all same rounded corners (outerRadius)
-        property real tlr: isActive ? outerRadius : ((isFirstRow && isLeftCol) ? outerRadius : innerRadius)
-        property real trr: isActive ? outerRadius : ((isFirstRow && isRightCol) ? outerRadius : innerRadius)
-        property real blr: isActive ? outerRadius : ((isLastRow && isLeftCol) ? outerRadius : innerRadius)
-        property real brr: isActive ? outerRadius : ((isLastRow && isRightCol) ? outerRadius : innerRadius)
+        property real tlr: isActive ? outerRadius + 8 : ((isFirstRow && isLeftCol) ? outerRadius : innerRadius)
+        property real trr: isActive ? outerRadius + 8 : ((isFirstRow && isRightCol) ? outerRadius : innerRadius)
+        property real blr: isActive ? outerRadius + 8 : ((isLastRow && isLeftCol) ? outerRadius : innerRadius)
+        property real brr: isActive ? outerRadius + 8 : ((isLastRow && isRightCol) ? outerRadius : innerRadius)
 
         Shape {
             id: profBg
@@ -378,11 +378,11 @@ DankModal {
 
             property color targetColor: isCardActive ? (profCard.hovered ? Theme.withAlpha(Theme.primary, 0.24) : Theme.withAlpha(Theme.primary, 0.18)) : (profCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04))
             property color paintColor: targetColor
-            Behavior on paintColor { ColorAnimation { duration: 250 } }
+            Behavior on paintColor { ColorAnimation { duration: 150 } }
 
-            property color targetBorder: isCardActive ? Theme.primary : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+            property color targetBorder: isCardActive ? Theme.withAlpha(Theme.primary, 0.6) : (profCard.hovered ? Theme.withAlpha(Theme.primary, 0.4) : Theme.withAlpha(Theme.secondary, 0.15))
             property color paintBorder: targetBorder
-            Behavior on paintBorder { ColorAnimation { duration: 250 } }
+            Behavior on paintBorder { ColorAnimation { duration: 150 } }
 
             ShapePath {
                 fillColor: profBg.paintColor
@@ -417,9 +417,9 @@ DankModal {
                 size: 18
                 color: profCard.isActive ? Theme.primary : (profCard.hovered ? Theme.primary : Theme.surfaceText)
                 Layout.alignment: Qt.AlignVCenter
-                scale: profCard.hovered ? 1.15 : 1.0
-                Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
-                Behavior on color { ColorAnimation { duration: 250 } }
+                scale: profCard.hovered ? 1.05 : 1.0
+                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+                Behavior on color { ColorAnimation { duration: 150 } }
             }
 
             StyledText {
@@ -430,7 +430,7 @@ DankModal {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
                 elide: Text.ElideRight
-                Behavior on color { ColorAnimation { duration: 250 } }
+                Behavior on color { ColorAnimation { duration: 150 } }
             }
 
             DankIcon { 
@@ -440,8 +440,8 @@ DankModal {
                 Layout.alignment: Qt.AlignVCenter
                 opacity: profCard.isActive ? 1.0 : 0.0
                 scale: profCard.isActive ? 1.0 : 0.0
-                Behavior on opacity { NumberAnimation { duration: 250 } }
-                Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
+                Behavior on opacity { NumberAnimation { duration: 150 } }
+                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
             }
         }
 
@@ -476,7 +476,7 @@ DankModal {
         property bool isOddLayout: totalCount % 2 === 1 && totalCount > 1
         property bool isSpan2: isOddLayout && cardIndex === totalCount - 1
 
-        width: isSpan2 ? parent.width : (parent.width - Theme.spacingS) / 2
+        width: Math.max(0, isSpan2 ? parent.width : (parent.width - Theme.spacingS) / 2)
         height: 140
         opacity: 1.0
 
@@ -490,10 +490,10 @@ DankModal {
         property bool isRightCol: cardIndex % 2 === 1 || cardIndex === totalCount - 1
 
         // Active card gets all same rounded corners (outerRadius)
-        property real tlr: isActive ? outerRadius : ((isFirstRow && isLeftCol) ? outerRadius : innerRadius)
-        property real trr: isActive ? outerRadius : ((isFirstRow && isRightCol) ? outerRadius : innerRadius)
-        property real blr: isActive ? outerRadius : ((isLastRow && isLeftCol) ? outerRadius : innerRadius)
-        property real brr: isActive ? outerRadius : ((isLastRow && isRightCol) ? outerRadius : innerRadius)
+        property real tlr: isActive ? outerRadius + 8 : ((isFirstRow && isLeftCol) ? outerRadius : innerRadius)
+        property real trr: isActive ? outerRadius + 8 : ((isFirstRow && isRightCol) ? outerRadius : innerRadius)
+        property real blr: isActive ? outerRadius + 8 : ((isLastRow && isLeftCol) ? outerRadius : innerRadius)
+        property real brr: isActive ? outerRadius + 8 : ((isLastRow && isRightCol) ? outerRadius : innerRadius)
 
         Shape {
             id: manualBg
@@ -509,7 +509,7 @@ DankModal {
             Behavior on brr { NumberAnimation { duration: 600; easing.type: Easing.OutExpo } }
 
             property color paintColor: isActive ? Theme.withAlpha(Theme.primary, 0.18) : (manualCard.hovered ? Theme.withAlpha(Theme.primary, 0.1) : Theme.withAlpha(Theme.secondary, 0.04))
-            property color paintBorder: isActive ? Theme.primary : (manualCard.hovered ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.4) : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15))
+            property color paintBorder: isActive ? Theme.withAlpha(Theme.primary, 0.6) : (manualCard.hovered ? Theme.withAlpha(Theme.primary, 0.4) : Theme.withAlpha(Theme.secondary, 0.15))
 
             ShapePath {
                 fillColor: manualBg.paintColor
@@ -556,10 +556,36 @@ DankModal {
                 }
                 
                 StyledText {
-                    text: manualCard.isActive ? I18n.tr("Active") : I18n.tr("Disabled")
+                    id: badgeLabel
+                    property string targetText: manualCard.isActive ? I18n.tr("Active") : I18n.tr("Disabled")
+                    property color targetColor: manualCard.isActive ? Theme.success : "#ffffff"
+                    
                     font.pixelSize: Theme.fontSizeSmall - 2
                     font.weight: Font.Bold
-                    color: manualCard.isActive ? Theme.success : "#ffffff"
+                    
+                    Component.onCompleted: {
+                        text = targetText
+                        color = targetColor
+                    }
+                    
+                    onTargetTextChanged: {
+                        if (text !== targetText) {
+                            flipAnim.restart()
+                        }
+                    }
+
+                    SequentialAnimation {
+                        id: flipAnim
+                        ParallelAnimation {
+                            NumberAnimation { target: badgeLabel; property: "opacity"; to: 0; duration: 75 }
+                            NumberAnimation { target: badgeLabel; property: "y"; to: -2; duration: 75 }
+                        }
+                        ScriptAction { script: { badgeLabel.text = badgeLabel.targetText; badgeLabel.color = badgeLabel.targetColor; badgeLabel.y = 2; } }
+                        ParallelAnimation {
+                            NumberAnimation { target: badgeLabel; property: "opacity"; to: 1; duration: 75 }
+                            NumberAnimation { target: badgeLabel; property: "y"; to: 0; duration: 75 }
+                        }
+                    }
                 }
             }
         }
@@ -580,9 +606,9 @@ DankModal {
                 color: manualCard.isActive ? Theme.primary : Theme.surfaceVariantText
                 filled: false
                 anchors.horizontalCenter: parent.horizontalCenter
-                scale: manualCard.isActive ? 1.05 : (manualCard.hovered ? 1.15 : 1.0)
-                Behavior on scale { NumberAnimation { duration: 300; easing.type: Easing.OutBack } }
-                Behavior on color { ColorAnimation { duration: 250 } }
+                scale: manualCard.isActive ? 1.05 : (manualCard.hovered ? 1.05 : 1.0)
+                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+                Behavior on color { ColorAnimation { duration: 150 } }
             }
 
             StyledText {
@@ -605,6 +631,7 @@ DankModal {
             visible: manualCard.isLoading
 
             DankIcon {
+                id: spinnerIcon
                 name: "cached"
                 size: 24
                 color: Theme.primary
@@ -614,6 +641,7 @@ DankModal {
                     from: 0; to: 360
                     duration: 600
                     running: manualCard.isLoading
+                    onStopped: spinnerIcon.rotation = 0
                 }
             }
         }
@@ -748,7 +776,7 @@ DankModal {
                                 implicitWidth: dropdownBtn.width
                                 implicitHeight: 34
                                 color: menuItem.highlighted ? Theme.withAlpha(root.roseAccent, 0.1) : "transparent"
-                                Behavior on color { ColorAnimation { duration: 100 } }
+                                Behavior on color { ColorAnimation { duration: 150 } }
                             }
 
                             onTriggered: {
@@ -909,8 +937,8 @@ DankModal {
                 // Centered Dashboard Card
                 StyledRect {
                     id: dashboardCard
-                    width: Math.min(1080, parent.width - 40)
-                    height: Math.min(mainLayout.implicitHeight + Theme.spacingL * 2, parent.height - 40)
+                    width: Math.max(0, Math.min(1080, parent.width - 40))
+                    height: Math.max(0, Math.min(mainLayout.implicitHeight + Theme.spacingL * 2, parent.height - 40))
                     Behavior on height { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
                     anchors.centerIn: parent
                     radius: Theme.cornerRadius * 1.8
@@ -934,7 +962,7 @@ DankModal {
 
                         opacity: customizationOverlay.active ? 0.0 : 1.0
                         enabled: !customizationOverlay.active
-                        Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+                        Behavior on opacity { NumberAnimation { duration: 150 } }
 
                         // 1. Dashboard Header (same style as CC widget header)
                         StyledRect {
@@ -975,7 +1003,7 @@ DankModal {
                                     id: fsHeaderRefreshBtnItem
                                     width: 38; height: 38
                                     Layout.alignment: Qt.AlignVCenter
-                                    scale: fsHeaderRefreshArea.pressed ? 0.9 : (fsHeaderRefreshArea.containsMouse ? 1.1 : 1.0)
+                                    scale: fsHeaderRefreshArea.pressed ? 0.9 : (fsHeaderRefreshArea.containsMouse ? 1.05 : 1.0)
                                     Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
 
                                     property bool isLoading: false
@@ -1022,10 +1050,11 @@ DankModal {
                                         SequentialAnimation {
                                             id: hoverSpinAnim
                                             running: fsHeaderRefreshArea.containsMouse && !fsHeaderRefreshBtnItem.isLoading
+                                            loops: Animation.Infinite
                                             onStopped: refreshIcon.rotation = 0
-                                            NumberAnimation { target: refreshIcon; property: "rotation"; from: 0; to: 45; duration: 200; easing.type: Easing.OutQuad }
-                                            NumberAnimation { target: refreshIcon; property: "rotation"; from: 45; to: -45; duration: 400; easing.type: Easing.InOutQuad }
-                                            NumberAnimation { target: refreshIcon; property: "rotation"; from: -45; to: 0; duration: 200; easing.type: Easing.InQuad }
+                                            NumberAnimation { target: refreshIcon; property: "rotation"; from: 0; to: 8; duration: 200; easing.type: Easing.OutQuad }
+                                            NumberAnimation { target: refreshIcon; property: "rotation"; from: 8; to: -8; duration: 400; easing.type: Easing.InOutQuad }
+                                            NumberAnimation { target: refreshIcon; property: "rotation"; from: -8; to: 0; duration: 200; easing.type: Easing.InQuad }
                                         }
 
                                         RotationAnimation on rotation {
@@ -1111,7 +1140,7 @@ DankModal {
                                                 badgeText: "3"
                                                 isActive: root.activeProfile === "mirror"
                                                 isCardDisabled: !root.hasExternal
-                                                width: root.disableInternalOption ? parent.width : (parent.width - Theme.spacingS) / 2
+                                                width: Math.max(0, root.disableInternalOption ? parent.width : (parent.width - Theme.spacingS) / 2)
                                                 onClicked: NiriDS.apply("mirror")
                                             }
 
@@ -1429,7 +1458,7 @@ DankModal {
                                         id: overlayCloseBtn
                                         width: 38; height: 38
                                         Layout.alignment: Qt.AlignVCenter
-                                        scale: closeMouse.pressed ? 0.88 : (closeMouse.containsMouse ? 1.1 : 1.0)
+                                        scale: closeMouse.pressed ? 0.9 : (closeMouse.containsMouse ? 1.05 : 1.0)
                                         Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
 
                                         Rectangle {
@@ -1438,22 +1467,29 @@ DankModal {
                                             color: closeMouse.containsMouse ? Qt.rgba(229/255, 57/255, 53/255, 0.15) : Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.4)
                                             border.width: 1
                                             border.color: closeMouse.containsMouse ? Qt.rgba(229/255, 57/255, 53/255, 0.3) : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
-                                            Behavior on color { ColorAnimation { duration: 500 } }
-                                            Behavior on border.color { ColorAnimation { duration: 500 } }
+                                            Behavior on color { ColorAnimation { duration: 150 } }
+                                            Behavior on border.color { ColorAnimation { duration: 150 } }
                                         }
 
                                         DankIcon {
+                                            id: closeIcon
                                             name: "close"
                                             size: 18
                                             color: closeMouse.containsMouse ? "#e53935" : Theme.primary
-                                            rotation: closeMouse.containsMouse ? 360 : 0
                                             anchors.centerIn: parent
 
-                                            Behavior on rotation {
-                                                NumberAnimation { duration: 750; easing.type: Easing.OutCubic }
+                                            SequentialAnimation {
+                                                id: closeHoverSpinAnim
+                                                running: closeMouse.containsMouse
+                                                loops: Animation.Infinite
+                                                onStopped: closeIcon.rotation = 0
+                                                NumberAnimation { target: closeIcon; property: "rotation"; from: 0; to: 8; duration: 200; easing.type: Easing.OutQuad }
+                                                NumberAnimation { target: closeIcon; property: "rotation"; from: 8; to: -8; duration: 400; easing.type: Easing.InOutQuad }
+                                                NumberAnimation { target: closeIcon; property: "rotation"; from: -8; to: 0; duration: 200; easing.type: Easing.InQuad }
                                             }
+
                                             Behavior on color {
-                                                ColorAnimation { duration: 500 }
+                                                ColorAnimation { duration: 150 }
                                             }
                                         }
 
