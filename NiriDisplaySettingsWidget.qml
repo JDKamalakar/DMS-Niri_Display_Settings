@@ -13,6 +13,8 @@ import qs.Modules.Settings.DisplayConfig
 
 PluginComponent {
     id: root
+    pluginId: "niriDSA"
+    pluginService: PluginService
 
     popoutWidth: 320
     popoutHeight: 0
@@ -161,23 +163,27 @@ PluginComponent {
         function onPluginIdChanged() { root.registerAsWidget(); }
     }
 
+    Component.onCompleted: root.registerAsWidget()
+
     // --- CC Support ---
     ccWidgetIcon: "computer"
     ccWidgetPrimaryText: "Display Settings"
-    ccWidgetSecondaryText: {
-        if (root.disableInternalOption && root.activeProfile === "internal_only") {
-            return I18n.tr("Laptop Screen");
-        }
-        switch (root.activeProfile) {
-            case "internal_only": return I18n.tr("Internal Only");
-            case "external_only": return I18n.tr("External Only");
-            case "extend": return I18n.tr("Extended");
-            case "mirror": return I18n.tr("Mirror");
-            default: return (root.filteredDisplays ? root.filteredDisplays.length : 0) + " displays";
-        }
-    }
+    ccWidgetSecondaryText: (root.disableInternalOption && root.activeProfile === "internal_only") ? I18n.tr("Laptop Screen") :
+                           (root.activeProfile === "internal_only") ? I18n.tr("Internal Only") :
+                           (root.activeProfile === "external_only") ? I18n.tr("External Only") :
+                           (root.activeProfile === "extend") ? I18n.tr("Extended") :
+                           (root.activeProfile === "mirror") ? I18n.tr("Mirror") :
+                           ((root.filteredDisplays ? root.filteredDisplays.length : 0) + " displays")
     ccWidgetIsActive: root.activeProfile !== "internal_only" && root.activeProfile !== ""
     ccDetailHeight: 480
+    
+    onCcWidgetToggled: {
+        displayModal.activeCustomizationDisplay = null;
+        NiriDS.detectFocusedOutput();
+        NiriDS.setDisplays();
+        displayModal.shouldBeVisible = true;
+        displayModal.openCentered();
+    }
 
     ccDetailContent: Component {
         ScrollView {
@@ -334,7 +340,8 @@ PluginComponent {
 
                         Rectangle {
                             anchors.fill: parent
-                            radius: Theme.cornerRadius
+                            radius: refreshBtnItem.isLoading ? height / 2 : Theme.cornerRadius
+                            Behavior on radius { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
                             color: refreshArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15) : Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.4)
                             border.width: 1
                             border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, refreshArea.containsMouse ? 0.3 : 0.15)
@@ -371,7 +378,8 @@ PluginComponent {
                         DankRipple {
                             id: refreshRipple
                             rippleColor: Theme.primary
-                            cornerRadius: Theme.cornerRadius
+                            cornerRadius: refreshBtnItem.isLoading ? height / 2 : Theme.cornerRadius
+                            Behavior on cornerRadius { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
                             anchors.fill: parent
                         }
                     }

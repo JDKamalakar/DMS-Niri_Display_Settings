@@ -1030,7 +1030,8 @@ DankModal {
 
                                     Rectangle {
                                         anchors.fill: parent
-                                        radius: Theme.cornerRadius
+                                        radius: fsHeaderRefreshBtnItem.isLoading ? height / 2 : Theme.cornerRadius
+                                        Behavior on radius { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
                                         color: fsHeaderRefreshArea.containsMouse ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15) : Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.4)
                                         border.width: 1
                                         border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, fsHeaderRefreshArea.containsMouse ? 0.3 : 0.15)
@@ -1038,7 +1039,13 @@ DankModal {
                                         Behavior on border.color { ColorAnimation { duration: 150 } }
                                     }
                                     
-                                    DankRipple { id: fsHeaderRefreshRipple; anchors.fill: parent; cornerRadius: Theme.cornerRadius; rippleColor: Theme.primary }
+                                    DankRipple { 
+                                        id: fsHeaderRefreshRipple; 
+                                        anchors.fill: parent; 
+                                        cornerRadius: fsHeaderRefreshBtnItem.isLoading ? height / 2 : Theme.cornerRadius
+                                        Behavior on cornerRadius { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
+                                        rippleColor: Theme.primary 
+                                    }
 
                                     DankIcon {
                                         id: refreshIcon
@@ -1463,7 +1470,8 @@ DankModal {
 
                                         Rectangle {
                                             anchors.fill: parent
-                                            radius: Theme.cornerRadius
+                                            radius: closeMouse.containsMouse || closeMouse.pressed ? height / 2 : Theme.cornerRadius
+                                            Behavior on radius { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
                                             color: closeMouse.containsMouse ? Qt.rgba(229/255, 57/255, 53/255, 0.15) : Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.4)
                                             border.width: 1
                                             border.color: closeMouse.containsMouse ? Qt.rgba(229/255, 57/255, 53/255, 0.3) : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
@@ -1503,7 +1511,8 @@ DankModal {
 
                                         DankRipple {
                                             anchors.fill: parent
-                                            cornerRadius: Theme.cornerRadius
+                                            cornerRadius: closeMouse.containsMouse || closeMouse.pressed ? height / 2 : Theme.cornerRadius
+                                            Behavior on cornerRadius { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
                                             rippleColor: closeMouse.containsMouse ? "#e53935" : Theme.primary
                                         }
                                     }
