@@ -1,21 +1,31 @@
 {
-    "$schema": "https://github.com/AvengeMedia/DankMaterialShell/raw/refs/heads/master/PLUGINS/plugin-schema.json",
-    "id": "niriDSA",
-    "name": "Niri Display Settings Advance",
-    "description": "Quickly toggle and configure display outputs in the Niri Wayland compositor",
-    "version": "2.0.0",
-    "author": "JDKamalakr",
-    "icon": "computer",
-    "type": "daemon",
-    "capabilities": [
-        "manage-displays",
-        "control-center"
-    ],
-    "component": "./NiriDisplaySettingsWidget.qml",
-    "settings": "./NiriDisplaySettings.qml",
-    "requires": [],
-    "permissions": [
-        "settings_read",
-        "settings_write"
-    ]
+  "id": "niriDSA",
+  "name": "Niri Display Settings Advance",
+  "description": "Quickly toggle and configure display outputs in the Niri Wayland compositor",
+  "category": "utilities",
+  "version": "2.0.0",
+  "author": "JDKamalakar",
+  "icon": "computer",
+  "type": [
+    "widget",
+    "daemon"
+  ],
+  "component": "./NiriDisplaySettingsWidget.qml",
+  "settings": "./NiriDisplaySettings.qml",
+  "capabilities": [
+    "control-center",
+    "dankbar-widget"
+  ],
+  "repo": "https://github.com/jdkamalakar/DMS-Niri_Display_Settings",
+  "compositors": [
+    "niri"
+  ],
+  "distro": [
+    "any"
+  ],
+  "dependencies": [],
+  "permissions": [
+    "settings_read",
+    "settings_write"
+  ]
 }
