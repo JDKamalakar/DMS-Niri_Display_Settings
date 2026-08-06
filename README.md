@@ -48,7 +48,18 @@ dms plugins install niriDSA
 ## Interface
 
 <div align="center">
-  <img src="screenshot.png" width="80%" alt="Niri Display Settings Interface" />
+  <img src="assets/Full-Screen_UI.png" width="80%" alt="Full-Screen UI" />
+</div>
+
+<div align="center" style="margin-top: 10px;">
+  <img src="assets/POP-Up_UI.png" width="45%" alt="Pop-Up UI" />
+  <img src="assets/QS_UI.png" width="45%" alt="Quick Settings UI" />
+</div>
+
+## Configuration
+
+<div align="center">
+  <img src="assets/Settings.png" width="80%" alt="Settings UI" />
 </div>
 
 ## Keybindings & IPC

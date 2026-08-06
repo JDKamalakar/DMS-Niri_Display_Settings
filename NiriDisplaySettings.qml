@@ -361,6 +361,13 @@ PluginSettings {
                             value = newValue;
                             mainSettingsCol.saveValue(settingKey, newValue / 100);
                         }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: false
+                            acceptedButtons: Qt.NoButton
+                            onWheel: (wheel) => { wheel.accepted = true; }
+                        }
                     }
 
                     Item { width: 1; height: Theme.spacingXS }
@@ -444,6 +451,13 @@ PluginSettings {
                         onSliderValueChanged: newValue => {
                             value = newValue;
                             mainSettingsCol.saveValue(settingKey, newValue / 100);
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: false
+                            acceptedButtons: Qt.NoButton
+                            onWheel: (wheel) => { wheel.accepted = true; }
                         }
                     }
                 }
