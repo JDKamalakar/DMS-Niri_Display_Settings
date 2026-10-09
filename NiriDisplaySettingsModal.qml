@@ -22,24 +22,8 @@ DankModal {
 
     // Helper base colors to ensure proper color object coercion in Theme.withAlpha
     readonly property color whiteColor: "#ffffff"
-    readonly property color blackColor: "#000000"
-    readonly property color roseBgBase: "#F3E8E6"
-    readonly property color roseCardBgBase: "#FCF5F3"
-    readonly property color roseActivePillBgBase: "#F5DFDE"
-    readonly property color roseGreenPillBgBase: "#E8F5E9"
-
     readonly property color cardColor: isDarkTheme ? Theme.withAlpha(whiteColor, 0.08) : Theme.withAlpha(Theme.surfaceContainerHigh, 0.6)
     readonly property color cardBorderColor: isDarkTheme ? Theme.withAlpha(whiteColor, 0.12) : Theme.withAlpha(Theme.primary, 0.15)
-
-    // Rose/maroon screenshot theme definitions
-    readonly property color roseBg: Theme.withAlpha(roseBgBase, 0.85)
-    readonly property color roseCardBg: Theme.withAlpha(roseCardBgBase, 0.6)
-    readonly property color roseTextDark: "#2A1A1C"
-    readonly property color roseAccent: "#A25E6A"
-    readonly property color roseAccentAlpha: "#1FA25E6A"
-    readonly property color roseActivePillBg: Theme.withAlpha(roseActivePillBgBase, 0.75)
-    readonly property color roseGreenDot: "#4CAF50"
-    readonly property color roseGreenPillBg: Theme.withAlpha(roseGreenPillBgBase, 0.7)
 
     readonly property string activeProfile: NiriDS.activeProfile
 
@@ -119,7 +103,7 @@ DankModal {
         signal clicked()
 
         width: Math.max(0, (parent.width - Theme.spacingS) / 2)
-        height: 140
+        height: 125
         opacity: isCardDisabled ? 0.45 : 1.0
 
         // Dynamic Corner Logic (Active button has all same rounded corners)
@@ -477,7 +461,7 @@ DankModal {
         property bool isSpan2: isOddLayout && cardIndex === totalCount - 1
 
         width: Math.max(0, isSpan2 ? parent.width : (parent.width - Theme.spacingS) / 2)
-        height: 140
+        height: 125
         opacity: 1.0
 
         property bool isFirstRow: cardIndex < 2
@@ -552,13 +536,13 @@ DankModal {
                 
                 Rectangle {
                     width: 6; height: 6; radius: 3
-                    color: manualCard.isActive ? Theme.success : "#ffffff"
+                    color: manualCard.isActive ? Theme.success : (Theme.onError ?? "#ffffff")
                 }
                 
                 StyledText {
                     id: badgeLabel
                     property string targetText: manualCard.isActive ? I18n.tr("Active") : I18n.tr("Disabled")
-                    property color targetColor: manualCard.isActive ? Theme.success : "#ffffff"
+                    property color targetColor: manualCard.isActive ? Theme.success : (Theme.onError ?? "#ffffff")
                     
                     font.pixelSize: Theme.fontSizeSmall - 2
                     font.weight: Font.Bold
@@ -678,117 +662,6 @@ DankModal {
         }
     }
 
-    component DropdownSelector: Item {
-        id: dropdown
-        property string label
-        property string currentText
-        property var options: []
-        property int currentIndex: 0
-        signal optionSelected(int index)
-
-        width: parent.width
-        height: 38
-
-        RowLayout {
-            anchors.fill: parent
-            spacing: Theme.spacingM
-
-            StyledText {
-                text: dropdown.label
-                font.pixelSize: Theme.fontSizeMedium - 1
-                color: roseTextDark
-                Layout.fillWidth: true
-            }
-
-            Rectangle {
-                id: dropdownBtn
-                Layout.preferredWidth: 220
-                height: 36
-                radius: Theme.cornerRadius
-                color: dropdownBtnMouse.containsMouse ? Theme.withAlpha(roseAccent, 0.15) : roseCardBg
-                border.width: 1
-                border.color: dropdownBtnMouse.containsMouse ? roseAccent : Theme.withAlpha(roseTextDark, 0.15)
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: Theme.spacingM
-                    anchors.rightMargin: Theme.spacingM
-                    spacing: Theme.spacingS
-
-                    StyledText {
-                        text: dropdown.currentText
-                        font.pixelSize: Theme.fontSizeMedium - 1
-                        color: roseTextDark
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
-                    }
-
-                    DankIcon {
-                        name: "arrow_drop_down"
-                        size: 18
-                        color: roseTextDark
-                        opacity: 0.7
-                    }
-                }
-
-                MouseArea {
-                    id: dropdownBtnMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        menu.open()
-                    }
-                }
-
-                Menu {
-                    id: menu
-                    y: dropdownBtn.height + 4
-                    width: dropdownBtn.width
-                    
-                    background: Rectangle {
-                        implicitWidth: dropdownBtn.width
-                        color: root.roseCardBg
-                        border.color: Theme.withAlpha(root.roseAccent, 0.25)
-                        border.width: 1
-                        radius: Theme.cornerRadius
-                    }
-
-                    Repeater {
-                        model: dropdown.options
-                        delegate: MenuItem {
-                            id: menuItem
-                            width: dropdownBtn.width
-                            height: 34
-                            text: modelData
-                            
-                            contentItem: StyledText {
-                                text: menuItem.text
-                                font.pixelSize: Theme.fontSizeMedium - 1
-                                color: menuItem.highlighted ? root.roseAccent : root.roseTextDark
-                                font.weight: menuItem.highlighted ? Font.DemiBold : Font.Normal
-                                verticalAlignment: Text.AlignVCenter
-                                anchors.left: parent.left
-                                anchors.leftMargin: Theme.spacingM
-                            }
-
-                            background: Rectangle {
-                                implicitWidth: dropdownBtn.width
-                                implicitHeight: 34
-                                color: menuItem.highlighted ? Theme.withAlpha(root.roseAccent, 0.1) : "transparent"
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                            }
-
-                            onTriggered: {
-                                dropdown.optionSelected(index)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     property bool isFullScreen: true
     signal fullscreenRequested()
     signal windowedRequested()
@@ -852,8 +725,12 @@ DankModal {
     }
 
     modalFocusScope.Keys.onPressed: event => {
-        if (event.key === Qt.Key_Escape && customizationOverlay.active) {
-            root.activeCustomizationDisplay = null;
+        if (event.key === Qt.Key_Escape) {
+            if (customizationOverlay.active) {
+                root.activeCustomizationDisplay = null;
+            } else {
+                root.close();
+            }
             event.accepted = true;
             return;
         }
@@ -937,8 +814,8 @@ DankModal {
                 // Centered Dashboard Card
                 StyledRect {
                     id: dashboardCard
-                    width: Math.max(0, Math.min(1080, parent.width - 40))
-                    height: Math.max(0, Math.min(mainLayout.implicitHeight + Theme.spacingL * 2, parent.height - 40))
+                    width: Math.max(0, Math.min(1120, parent.width - 32))
+                    height: Math.max(0, Math.min(mainLayout.implicitHeight + Theme.spacingL * 2, parent.height - 16))
                     Behavior on height { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
                     anchors.centerIn: parent
                     radius: Theme.cornerRadius * 1.8
@@ -1155,7 +1032,7 @@ DankModal {
                                                 index: 3
                                                 label: I18n.tr("Internal Only")
                                                 desc: I18n.tr("Uses only the built-in laptop screen")
-                                                iconName: "laptop"
+                                                iconName: "computer"
                                                 badgeText: "4"
                                                 isActive: root.activeProfile === "internal_only"
                                                 visible: !root.disableInternalOption
@@ -1297,8 +1174,9 @@ DankModal {
                         width: parent.width
                         height: parent.height
                         radius: parent.radius
-                        color: "transparent"
-                        border.width: 0
+                        color: Theme.withAlpha(Theme.surfaceContainerHigh, root.uiTransparency)
+                        border.width: 1
+                        border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
                         z: 10
                         clip: true
 
@@ -1320,26 +1198,50 @@ DankModal {
                             clip: true
                         }
 
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: true
-                            }
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: customizationOverlay.forceActiveFocus()
+                        }
 
-                            function getRawTransform(tVal) {
-                                const transformMap = {
-                                    "Normal": "normal",
-                                    "90": "90",
-                                    "180": "180",
-                                    "270": "270",
-                                    "Flipped": "flipped",
-                                    "Flipped90": "flipped-90",
-                                    "Flipped180": "flipped-180",
-                                    "Flipped270": "flipped-270"
-                                };
-                                return transformMap[tVal] || "normal";
+                        focus: active
+                        Keys.onEscapePressed: (event) => {
+                            root.activeCustomizationDisplay = null;
+                            event.accepted = true;
+                            if (modalFocusScope) modalFocusScope.forceActiveFocus();
+                        }
+                        Keys.onPressed: (event) => {
+                            if (event.key === Qt.Key_Escape) {
+                                root.activeCustomizationDisplay = null;
+                                event.accepted = true;
+                                if (modalFocusScope) modalFocusScope.forceActiveFocus();
                             }
+                        }
+                        onActiveChanged: {
+                            if (active) {
+                                Qt.callLater(() => customizationOverlay.forceActiveFocus());
+                            } else {
+                                Qt.callLater(() => {
+                                    if (modalFocusScope) modalFocusScope.forceActiveFocus();
+                                });
+                            }
+                        }
 
-                            function applySetting(key, val) {
+                        function getRawTransform(tVal) {
+                            const transformMap = {
+                                "Normal": "normal",
+                                "90": "90",
+                                "180": "180",
+                                "270": "270",
+                                "Flipped": "flipped",
+                                "Flipped90": "flipped-90",
+                                "Flipped180": "flipped-180",
+                                "Flipped270": "flipped-270"
+                            };
+                            return transformMap[tVal] || "normal";
+                        }
+
+                        function applySetting(key, val) {
                                 if (!displayData) return;
                                 const name = displayData.name;
                                 const config = {};
@@ -1418,8 +1320,10 @@ DankModal {
                                 anchors.top: parent.top
                                 anchors.left: parent.left
                                 anchors.right: parent.right
-                                anchors.margins: Theme.spacingL
-                                height: 72
+                                anchors.leftMargin: Theme.spacingL
+                                anchors.rightMargin: Theme.spacingL
+                                anchors.topMargin: Theme.spacingM
+                                height: 64
                                 radius: Theme.cornerRadius
                                 color: Theme.withAlpha(Theme.surfaceContainerHigh, root.uiTransparency)
                                 border.width: 1
@@ -1427,7 +1331,9 @@ DankModal {
 
                                 RowLayout {
                                     anchors.fill: parent
-                                    anchors.margins: Theme.spacingM
+                                    anchors.margins: Theme.spacingS
+                                    anchors.leftMargin: Theme.spacingM
+                                    anchors.rightMargin: Theme.spacingM
                                     spacing: Theme.spacingM
 
                                     // Display icon badge
@@ -1472,9 +1378,9 @@ DankModal {
                                             anchors.fill: parent
                                             radius: closeMouse.containsMouse || closeMouse.pressed ? height / 2 : Theme.cornerRadius
                                             Behavior on radius { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
-                                            color: closeMouse.containsMouse ? Qt.rgba(229/255, 57/255, 53/255, 0.15) : Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.4)
+                                            color: closeMouse.containsMouse ? Theme.withAlpha(Theme.error, 0.15) : Qt.rgba(Theme.surfaceContainer.r, Theme.surfaceContainer.g, Theme.surfaceContainer.b, 0.4)
                                             border.width: 1
-                                            border.color: closeMouse.containsMouse ? Qt.rgba(229/255, 57/255, 53/255, 0.3) : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                                            border.color: closeMouse.containsMouse ? Theme.withAlpha(Theme.error, 0.3) : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
                                             Behavior on color { ColorAnimation { duration: 150 } }
                                             Behavior on border.color { ColorAnimation { duration: 150 } }
                                         }
@@ -1483,7 +1389,7 @@ DankModal {
                                             id: closeIcon
                                             name: "close"
                                             size: 18
-                                            color: closeMouse.containsMouse ? "#e53935" : Theme.primary
+                                            color: closeMouse.containsMouse ? Theme.error : Theme.primary
                                             anchors.centerIn: parent
 
                                             SequentialAnimation {
@@ -1513,7 +1419,7 @@ DankModal {
                                             anchors.fill: parent
                                             cornerRadius: closeMouse.containsMouse || closeMouse.pressed ? height / 2 : Theme.cornerRadius
                                             Behavior on cornerRadius { NumberAnimation { duration: 250; easing.type: Easing.OutBack } }
-                                            rippleColor: closeMouse.containsMouse ? "#e53935" : Theme.primary
+                                            rippleColor: closeMouse.containsMouse ? Theme.error : Theme.primary
                                         }
                                     }
                                 }
@@ -1526,7 +1432,7 @@ DankModal {
                                 anchors.right: parent.right
                                 anchors.leftMargin: Theme.spacingL
                                 anchors.rightMargin: Theme.spacingL
-                                anchors.topMargin: Theme.spacingM
+                                anchors.topMargin: Theme.spacingS
                                 anchors.bottomMargin: Theme.spacingS
                                 contentHeight: contentCol.implicitHeight
                                 clip: true
@@ -1536,12 +1442,12 @@ DankModal {
                                 ColumnLayout {
                                     id: contentCol
                                     width: parent.width
-                                    spacing: Theme.spacingS
+                                    spacing: 6
 
                                     // ── Resolution & Refresh Rate ──────────────────────
                                     StyledRect {
                                         Layout.fillWidth: true
-                                        height: resModeCol.implicitHeight + Theme.spacingM * 2
+                                        height: resModeCol.implicitHeight + Theme.spacingS * 2
                                         radius: Theme.cornerRadius
                                         color: Theme.withAlpha(Theme.surfaceContainer, 0.5)
                                         border.width: 1
@@ -1549,8 +1455,8 @@ DankModal {
 
                                         ColumnLayout {
                                             id: resModeCol
-                                            anchors { fill: parent; margins: Theme.spacingM }
-                                            spacing: Theme.spacingS
+                                            anchors { fill: parent; margins: Theme.spacingS }
+                                            spacing: Theme.spacingXS
 
                                             RowLayout {
                                                 spacing: Theme.spacingXS
@@ -1578,7 +1484,7 @@ DankModal {
                                     // ── Scale & Transform ──────────────────────────────
                                     StyledRect {
                                         Layout.fillWidth: true
-                                        height: scaleTransformCol.implicitHeight + Theme.spacingM * 2
+                                        height: scaleTransformCol.implicitHeight + Theme.spacingS * 2
                                         radius: Theme.cornerRadius
                                         color: Theme.withAlpha(Theme.surfaceContainer, 0.5)
                                         border.width: 1
@@ -1586,8 +1492,8 @@ DankModal {
 
                                         ColumnLayout {
                                             id: scaleTransformCol
-                                            anchors { fill: parent; margins: Theme.spacingM }
-                                            spacing: Theme.spacingS
+                                            anchors { fill: parent; margins: Theme.spacingS }
+                                            spacing: Theme.spacingXS
 
                                             RowLayout {
                                                 spacing: Theme.spacingXS
@@ -1661,7 +1567,7 @@ DankModal {
                                     // ── VRR ───────────────────────────────────────────
                                     StyledRect {
                                         Layout.fillWidth: true
-                                        height: vrrCol.implicitHeight + Theme.spacingM * 2
+                                        height: vrrCol.implicitHeight + Theme.spacingS * 2
                                         radius: Theme.cornerRadius
                                         color: Theme.withAlpha(Theme.surfaceContainer, 0.5)
                                         border.width: 1
@@ -1669,8 +1575,8 @@ DankModal {
 
                                         ColumnLayout {
                                             id: vrrCol
-                                            anchors { fill: parent; margins: Theme.spacingM }
-                                            spacing: Theme.spacingS
+                                            anchors { fill: parent; margins: Theme.spacingS }
+                                            spacing: Theme.spacingXS
 
                                             RowLayout {
                                                 spacing: Theme.spacingXS

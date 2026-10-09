@@ -105,16 +105,6 @@ Singleton {
     }
 
     Timer {
-        id: autoRefreshTimer
-        interval: 5000
-        running: true
-        repeat: true
-        onTriggered: {
-            root.setDisplays();
-        }
-    }
-
-    Timer {
         id: delayedRefreshTimer
         interval: 500
         repeat: false
@@ -123,9 +113,19 @@ Singleton {
         }
     }
 
+    Connections {
+        target: typeof NiriService !== "undefined" ? NiriService : null
+        ignoreUnknownSignals: true
+        function onOutputsChanged() {
+            root.setDisplays();
+        }
+    }
+
     function stopMirror(): void {
-        Quickshell.execDetached(["sh", "-c", "pkill -f wl-mirror 2>/dev/null"]);
-        root.wlMirrorPid = 0;
+        if (root.wlMirrorPid > 0) {
+            Quickshell.execDetached(["kill", "-9", root.wlMirrorPid.toString()]);
+            root.wlMirrorPid = 0;
+        }
         if (mirrorLauncher.running) mirrorLauncher.running = false;
     }
 
@@ -146,49 +146,48 @@ Singleton {
         } catch (e) {}
 
         if (preferred && display.name === preferred) return true;
+        if (!preferred) return isInternalName(display.name);
 
+        return false;
+    }
+
+    function updateOutputsFromRaw(parsed) {
+        if (!parsed || typeof parsed !== 'object') return;
+        root.rawOutputs = parsed;
+        const arr = [];
+        for (const name in parsed) {
+            const raw = parsed[name];
+            const internal = isInternal({ name: name });
+            const hasLogical = raw.logical && typeof raw.logical === 'object';
+            let friendly = internal ? "Laptop Screen" : ((raw.make && raw.model) ? (raw.make + " " + raw.model) : name);
+
+            arr.push({
+                name: name,
+                friendlyName: friendly,
+                disabled: !hasLogical,
+                logical: hasLogical ? raw.logical : null,
+                isInternal: internal
+            });
+        }
+        arr.sort((a, b) => {
+            if (a.isInternal !== b.isInternal) return a.isInternal ? -1 : 1;
+            return a.name.localeCompare(b.name);
+        });
+        arr.forEach(d => delete d.isInternal);
+        root.displays = arr;
     }
 
     function setDisplays() {
-        Proc.runCommand("niriDSA:checkMirror", ["pgrep", "-x", "wl-mirror"], (out, code) => {
-            const lines = out.trim().split("\n");
-            let foundPid = 0;
-            for (let i = 0; i < lines.length; i++) {
-                const pid = parseInt(lines[i].trim());
-                if (!isNaN(pid) && pid > 0) {
-                    foundPid = pid;
-                    break;
-                }
-            }
-            root.wlMirrorPid = foundPid;
-        });
+        if (typeof NiriService !== "undefined" && NiriService && NiriService.outputs && Object.keys(NiriService.outputs).length > 0) {
+            root.updateOutputsFromRaw(NiriService.outputs);
+            return;
+        }
 
         Proc.runCommand("niriDSA:getOutputs", ["niri", "msg", "--json", "outputs"], (output, exitCode) => {
             if (exitCode !== 0) return;
             try {
                 const parsed = JSON.parse(output);
-                root.rawOutputs = parsed;
-                const arr = [];
-                for (const name in parsed) {
-                    const raw = parsed[name];
-                    const internal = isInternal({ name: name });
-                    const hasLogical = raw.logical && typeof raw.logical === 'object';
-                    let friendly = internal ? "Laptop Screen" : ((raw.make && raw.model) ? (raw.make + " " + raw.model) : name);
-
-                    arr.push({
-                        name: name,
-                        friendlyName: friendly,
-                        disabled: !hasLogical,
-                        logical: hasLogical ? raw.logical : null,
-                        isInternal: internal
-                    });
-                }
-                arr.sort((a, b) => {
-                    if (a.isInternal !== b.isInternal) return a.isInternal ? -1 : 1;
-                    return a.name.localeCompare(b.name);
-                });
-                arr.forEach(d => delete d.isInternal);
-                root.displays = arr;
+                root.updateOutputsFromRaw(parsed);
             } catch (e) {
                 console.warn("niriDSA: setDisplays failed:", e);
             }

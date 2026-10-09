@@ -85,85 +85,42 @@ PluginComponent {
         Qt.callLater(() => Qt.callLater(() => NiriDS.enableInternalDisplay()));
     }
 
-    Timer {
-        id: niriWatcher
-        interval: (pluginData?.pollingInterval ?? 3) * 1000
-        repeat: true
-        running: true
-
-        onTriggered: {
-            NiriDS.setDisplays();
-            root.initTicks++;
-
-            Qt.callLater(() => {
-                const current = NiriDS.displays.length;
-
-                // Skip first 2 ticks to allow Niri to stabilize outputs
-                if (root.initTicks < 3) {
-                    if (root.initTicks === 2) {
-                        root.lastOutputCount = current;
-                    }
-                    return;
-                }
-
-                if (current > root.lastOutputCount) {
-                    const action = (pluginData && typeof pluginData.connectionAction === 'string' && pluginData.connectionAction)
-                        ? pluginData.connectionAction
-                        : "show_menu";
-
-                    if (action === "show_menu") {
-                        displayModal.activeCustomizationDisplay = null;
-                        NiriDS.detectFocusedOutput();
-                        NiriDS.setDisplays();
-                        displayModal.shouldBeVisible = true;
-                        displayModal.openCentered();
-                    } else if (action !== "none") {
-                        NiriDS.apply(action);
-                    }
-                } else if (root.lastOutputCount > 0 && current < root.lastOutputCount) {
-                    // Display count decreased - external monitor unplugged
-                    checkFallback();
-                }
-
-                root.lastOutputCount = current;
-            });
+    function handleDisplaysChanged() {
+        const current = NiriDS.displays.length;
+        if (root.lastOutputCount === 0) {
+            root.lastOutputCount = current;
+            return;
         }
-    }
 
-    property bool _registeredAsWidget: false
-    function registerAsWidget() {
-        if (_registeredAsWidget) return;
-        if (root.pluginId && root.pluginService) {
-            const pid = root.pluginId;
-            const ps = root.pluginService;
-            const comp = ps.pluginDaemonComponents[pid];
-            if (comp) {
-                const newComponents = Object.assign({}, ps.pluginWidgetComponents);
-                newComponents[pid] = comp;
-                ps.pluginWidgetComponents = newComponents;
-            }
+        if (current > root.lastOutputCount) {
+            const action = (pluginData && typeof pluginData.connectionAction === 'string' && pluginData.connectionAction)
+                ? pluginData.connectionAction
+                : "show_menu";
 
-            const avail = ps.availablePlugins[pid];
-            if (avail) {
-                avail.type = "widget";
+            if (action === "show_menu") {
+                displayModal.activeCustomizationDisplay = null;
+                NiriDS.detectFocusedOutput();
+                NiriDS.setDisplays();
+                displayModal.shouldBeVisible = true;
+                displayModal.openCentered();
+            } else if (action !== "none") {
+                NiriDS.apply(action);
             }
-            const loaded = ps.loadedPlugins[pid];
-            if (loaded) {
-                loaded.type = "widget";
-            }
-            ps.pluginListUpdated();
-            _registeredAsWidget = true;
+        } else if (current < root.lastOutputCount) {
+            // Display count decreased - external monitor unplugged
+            checkFallback();
         }
+
+        root.lastOutputCount = current;
     }
 
     Connections {
-        target: root
+        target: NiriDS
         ignoreUnknownSignals: true
-        function onPluginServiceChanged() { root.registerAsWidget(); }
-        function onPluginIdChanged() { root.registerAsWidget(); }
+        function onDisplaysChanged() {
+            root.handleDisplaysChanged();
+        }
     }
-
-    Component.onCompleted: root.registerAsWidget()
 
     // --- CC Support ---
     ccWidgetIcon: "computer"

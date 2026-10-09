@@ -10,236 +10,425 @@ PluginSettings {
     id: root
     pluginId: "niriDSA"
 
+    readonly property real outerR: Theme.cornerRadius || 12
+    readonly property real innerR: 4
+
+    function loadValue(key, def) {
+        if (typeof PluginService !== "undefined" && PluginService && PluginService.loadPluginData) {
+            return PluginService.loadPluginData(root.pluginId, key, def);
+        }
+        return def;
+    }
+
+    function saveValue(key, val) {
+        if (typeof PluginService !== "undefined" && PluginService && PluginService.savePluginData) {
+            PluginService.savePluginData(root.pluginId, key, val);
+            if (PluginService.setGlobalVar) {
+                PluginService.setGlobalVar(root.pluginId, key, val);
+            }
+        }
+    }
+
+    function loadAll() {
+        if (connectionDropdown) connectionDropdown.loadValue();
+        if (fallbackToggle) fallbackToggle.loadValue();
+        if (disableInternalToggle) disableInternalToggle.loadValue();
+        if (profilesToggle) profilesToggle.loadValue();
+        if (fallbackDisplayField) fallbackDisplayField.loadValue();
+        if (dimSlider) dimSlider.loadValue();
+        if (transSlider) transSlider.loadValue();
+    }
+
+    Component.onCompleted: loadAll()
+
+    onPluginServiceChanged: {
+        if (pluginService) {
+            loadAll();
+        }
+    }
+
+    Connections {
+        target: PluginService
+        ignoreUnknownSignals: true
+        function onPluginDataChanged(pId) {
+            if (pId === root.pluginId) {
+                root.loadAll();
+            }
+        }
+        function onGlobalVarChanged(pId, varName) {
+            if (pId === root.pluginId) {
+                root.loadAll();
+            }
+        }
+    }
+
     Column {
         id: mainSettingsCol
         width: parent.width
         spacing: Theme.spacingL
 
-        function loadValue(key, def) {
-            return PluginService.loadPluginData(root.pluginId, key, def);
-        }
-
-        function saveValue(key, val) {
-            PluginService.savePluginData(root.pluginId, key, val);
-        }
-
-        function loadValueInternal() {
-            autoBehaviorsRect.loadValue();
-            interfaceRect.loadValue();
-        }
-        
-        Component.onCompleted: loadValueInternal()
-
         // --- Automatic Behaviors Section ---
-        Rectangle {
-            id: autoBehaviorsRect
+        Column {
             width: parent.width
-            height: autoBehaviorsGroup.implicitHeight + Theme.spacingM * 2
-            color: Theme.surfaceContainer
-            radius: Theme.cornerRadius
-            border.color: Theme.outline
-            border.width: 1
-            opacity: 0.8
+            spacing: Theme.spacingS
 
-            function loadValue() {
-                connectionDropdown.loadValue();
-                fallbackToggle.loadValue();
-                disableInternalToggle.loadValue();
-                profilesToggle.loadValue();
-                fallbackDisplayField.loadValue();
+            Row {
+                spacing: Theme.spacingXS
+                leftPadding: Theme.spacingM
+                DankIcon {
+                    name: "cable"
+                    size: 16
+                    color: Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                StyledText {
+                    text: I18n.tr("Automatic Behaviors")
+                    font.pixelSize: Theme.fontSizeSmall
+                    font.weight: Font.DemiBold
+                    color: Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             Column {
-                id: autoBehaviorsGroup
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingM
+                width: parent.width
+                spacing: 2
 
-                Column {
+                // Segment 1: When monitor is connected (Dropdown)
+                Rectangle {
                     width: parent.width
-                    spacing: Theme.spacingS
+                    implicitHeight: connCol.implicitHeight + Theme.spacingM * 2
+                    color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
+                    border.width: 1
+                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.10)
 
-                    // Section Title
-                    StyledText {
-                        text: I18n.tr("Automatic Behaviors")
-                        width: parent.width
-                        font.weight: Font.Medium
-                        font.pixelSize: Theme.fontSizeMedium
-                        color: Theme.surfaceText
-                    }
+                    topLeftRadius: root.outerR
+                    topRightRadius: root.outerR
+                    bottomLeftRadius: root.innerR
+                    bottomRightRadius: root.innerR
 
-                    // When monitor is connected
-                    RowLayout {
-                        width: parent.width
-                        spacing: Theme.spacingM
-                        DankIcon { name: "cable"; size: 22; Layout.alignment: Qt.AlignVCenter; opacity: 0.8 }
-                        Column {
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: Theme.spacingXXS
-                            StyledText { text: I18n.tr("When monitor is connected"); width: parent.width; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: I18n.tr("Choose what happens automatically when an external monitor is plugged in"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                        }
-                    }
+                    Column {
+                        id: connCol
+                        anchors.fill: parent
+                        anchors.margins: Theme.spacingM
+                        spacing: Theme.spacingS
 
-                    DankDropdown {
-                        id: connectionDropdown
-                        property string settingKey: "connectionAction"
-                        property string defaultValue: "show_menu"
-                        width: parent.width
-                        
-                        property var optionList: [
-                            { label: I18n.tr("Show Menu"), value: "show_menu" },
-                            { label: I18n.tr("External Only"), value: "external_only" },
-                            { label: I18n.tr("Extended"), value: "extend" },
-                            { label: I18n.tr("Internal Only"), value: "internal_only" },
-                            { label: I18n.tr("Mirror"), value: "mirror" },
-                            { label: I18n.tr("Do Nothing"), value: "none" }
-                        ]
+                        RowLayout {
+                            width: parent.width
+                            spacing: Theme.spacingM
 
-                        options: optionList.map(function(opt) { return opt.label; })
+                            Rectangle {
+                                width: 32
+                                height: 32
+                                radius: 16
+                                color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                                Layout.alignment: Qt.AlignVCenter
 
-                        function loadValue() {
-                            var savedVal = mainSettingsCol.loadValue(settingKey, defaultValue);
-                            var found = optionList.find(function(opt) { return opt.value === savedVal; });
-                            currentValue = found ? found.label : optionList[0].label;
+                                DankIcon {
+                                    name: "settings_input_hdmi"
+                                    size: 18
+                                    color: Theme.primary
+                                    anchors.centerIn: parent
+                                }
+                            }
+
+                            Column {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 2
+                                StyledText { text: I18n.tr("When monitor is connected"); font.weight: Font.Medium; color: Theme.surfaceText }
+                                StyledText { text: I18n.tr("Choose what happens automatically when an external monitor is plugged in"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; Layout.fillWidth: true; wrapMode: Text.WordWrap }
+                            }
                         }
 
-                        Component.onCompleted: loadValue()
+                        DankDropdown {
+                            id: connectionDropdown
+                            property string settingKey: "connectionAction"
+                            property string defaultValue: "show_menu"
+                            width: parent.width
 
-                        onValueChanged: value => {
-                            var found = optionList.find(function(opt) { return opt.label === value; });
-                            if (found) {
-                                mainSettingsCol.saveValue(settingKey, found.value);
+                            property var optionList: [
+                                { label: I18n.tr("Show Menu"), value: "show_menu" },
+                                { label: I18n.tr("External Only"), value: "external_only" },
+                                { label: I18n.tr("Extended"), value: "extend" },
+                                { label: I18n.tr("Internal Only"), value: "internal_only" },
+                                { label: I18n.tr("Mirror"), value: "mirror" },
+                                { label: I18n.tr("Do Nothing"), value: "none" }
+                            ]
+
+                            options: optionList.map(function(opt) { return opt.label; })
+
+                            function loadValue() {
+                                var savedVal = root.loadValue(settingKey, defaultValue);
+                                var found = optionList.find(function(opt) { return opt.value === savedVal; });
+                                currentValue = found ? found.label : optionList[0].label;
+                            }
+
+                            Component.onCompleted: loadValue()
+
+                            onValueChanged: value => {
+                                var found = optionList.find(function(opt) { return opt.label === value; });
+                                if (found) {
+                                    root.saveValue(settingKey, found.value);
+                                }
                             }
                         }
                     }
+                }
 
-                    Item { width: 1; height: Theme.spacingXS }
+                // Segment 2: Enable safety fallback
+                Rectangle {
+                    width: parent.width
+                    height: 56
+                    color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
+                    border.width: 1
+                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.10)
 
-                    // Enable safety fallback
+                    topLeftRadius: root.innerR
+                    topRightRadius: root.innerR
+                    bottomLeftRadius: root.innerR
+                    bottomRightRadius: root.innerR
+
                     RowLayout {
-                        width: parent.width
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.spacingM
+                        anchors.rightMargin: Theme.spacingM
                         spacing: Theme.spacingM
-                        DankIcon { name: "security"; size: 22; Layout.alignment: Qt.AlignVCenter; opacity: 0.8 }
+
+                        Rectangle {
+                            width: 32
+                            height: 32
+                            radius: 16
+                            color: fallbackToggle.checked ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15) : Qt.rgba(Theme.surfaceContainerHighest.r, Theme.surfaceContainerHighest.g, Theme.surfaceContainerHighest.b, 0.5)
+                            Layout.alignment: Qt.AlignVCenter
+                            Behavior on color { ColorAnimation { duration: 150 } }
+
+                            DankIcon {
+                                name: "security"
+                                size: 18
+                                color: fallbackToggle.checked ? Theme.primary : Theme.surfaceVariantText
+                                anchors.centerIn: parent
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                            }
+                        }
+
                         Column {
                             Layout.fillWidth: true
                             Layout.alignment: Qt.AlignVCenter
-                            spacing: Theme.spacingXXS
-                            StyledText { text: I18n.tr("Enable safety fallback"); width: parent.width; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: I18n.tr("Automatically re-enable the laptop screen if all external monitors are disconnected"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
+                            spacing: 2
+                            StyledText { text: I18n.tr("Enable safety fallback"); font.weight: Font.Medium; color: Theme.surfaceText }
+                            StyledText { text: I18n.tr("Automatically re-enable the laptop screen if all external monitors are disconnected"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; Layout.fillWidth: true; elide: Text.ElideRight }
                         }
+
                         DankToggle {
                             id: fallbackToggle
                             Layout.alignment: Qt.AlignVCenter
                             property string settingKey: "enableFallback"
                             checked: true
-                            
+
                             function loadValue() {
-                                var val = mainSettingsCol.loadValue(settingKey, true);
+                                var val = root.loadValue(settingKey, true);
                                 checked = (val === true || val === "true");
                             }
                             Component.onCompleted: loadValue()
-                            
+
                             onToggled: isChecked => {
-                                mainSettingsCol.saveValue(settingKey, isChecked);
+                                checked = isChecked;
+                                root.saveValue(settingKey, isChecked);
                             }
                         }
                     }
+                }
 
-                    Item { width: 1; height: Theme.spacingXS }
+                // Segment 3: Disable internal display option
+                Rectangle {
+                    width: parent.width
+                    height: 56
+                    color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
+                    border.width: 1
+                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.10)
 
-                    // Disable internal display option
+                    topLeftRadius: root.innerR
+                    topRightRadius: root.innerR
+                    bottomLeftRadius: root.innerR
+                    bottomRightRadius: root.innerR
+
                     RowLayout {
-                        width: parent.width
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.spacingM
+                        anchors.rightMargin: Theme.spacingM
                         spacing: Theme.spacingM
-                        DankIcon { name: "laptop_disabled"; size: 22; Layout.alignment: Qt.AlignVCenter; opacity: 0.8 }
+
+                        Rectangle {
+                            width: 32
+                            height: 32
+                            radius: 16
+                            color: disableInternalToggle.checked ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15) : Qt.rgba(Theme.surfaceContainerHighest.r, Theme.surfaceContainerHighest.g, Theme.surfaceContainerHighest.b, 0.5)
+                            Layout.alignment: Qt.AlignVCenter
+                            Behavior on color { ColorAnimation { duration: 150 } }
+
+                            DankIcon {
+                                name: "desktop_access_disabled"
+                                size: 18
+                                color: disableInternalToggle.checked ? Theme.primary : Theme.surfaceVariantText
+                                anchors.centerIn: parent
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                            }
+                        }
+
                         Column {
                             Layout.fillWidth: true
                             Layout.alignment: Qt.AlignVCenter
-                            spacing: Theme.spacingXXS
-                            StyledText { text: I18n.tr("Disable internal display option"); width: parent.width; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: I18n.tr("Remove the internal display option and the 'Internal Only' profile selection from both UIs"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
+                            spacing: 2
+                            StyledText { text: I18n.tr("Disable internal display option"); font.weight: Font.Medium; color: Theme.surfaceText }
+                            StyledText { text: I18n.tr("Remove the internal display option and 'Internal Only' profile selection from UIs"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; Layout.fillWidth: true; elide: Text.ElideRight }
                         }
+
                         DankToggle {
                             id: disableInternalToggle
                             Layout.alignment: Qt.AlignVCenter
                             property string settingKey: "disableInternalOption"
                             checked: false
-                            
+
                             function loadValue() {
-                                var val = mainSettingsCol.loadValue(settingKey, false);
+                                var val = root.loadValue(settingKey, false);
                                 checked = (val === true || val === "true");
                             }
                             Component.onCompleted: loadValue()
-                            
+
                             onToggled: isChecked => {
-                                mainSettingsCol.saveValue(settingKey, isChecked);
+                                checked = isChecked;
+                                root.saveValue(settingKey, isChecked);
                             }
                         }
                     }
+                }
 
-                    Item { width: 1; height: Theme.spacingXS }
+                // Segment 4: Show display profiles
+                Rectangle {
+                    width: parent.width
+                    height: 56
+                    color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
+                    border.width: 1
+                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.10)
 
-                    // Show display profiles
+                    topLeftRadius: root.innerR
+                    topRightRadius: root.innerR
+                    bottomLeftRadius: root.innerR
+                    bottomRightRadius: root.innerR
+
                     RowLayout {
-                        width: parent.width
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.spacingM
+                        anchors.rightMargin: Theme.spacingM
                         spacing: Theme.spacingM
-                        DankIcon { name: "view_carousel"; size: 22; Layout.alignment: Qt.AlignVCenter; opacity: 0.8 }
+
+                        Rectangle {
+                            width: 32
+                            height: 32
+                            radius: 16
+                            color: profilesToggle.checked ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15) : Qt.rgba(Theme.surfaceContainerHighest.r, Theme.surfaceContainerHighest.g, Theme.surfaceContainerHighest.b, 0.5)
+                            Layout.alignment: Qt.AlignVCenter
+                            Behavior on color { ColorAnimation { duration: 150 } }
+
+                            DankIcon {
+                                name: "view_carousel"
+                                size: 18
+                                color: profilesToggle.checked ? Theme.primary : Theme.surfaceVariantText
+                                anchors.centerIn: parent
+                                Behavior on color { ColorAnimation { duration: 150 } }
+                            }
+                        }
+
                         Column {
                             Layout.fillWidth: true
                             Layout.alignment: Qt.AlignVCenter
-                            spacing: Theme.spacingXXS
-                            StyledText { text: I18n.tr("Show display profiles"); width: parent.width; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: I18n.tr("Show saved display configuration profiles under the manual controls section"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
+                            spacing: 2
+                            StyledText { text: I18n.tr("Show display profiles"); font.weight: Font.Medium; color: Theme.surfaceText }
+                            StyledText { text: I18n.tr("Show saved display configuration profiles under the manual controls section"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; Layout.fillWidth: true; elide: Text.ElideRight }
                         }
+
                         DankToggle {
                             id: profilesToggle
                             Layout.alignment: Qt.AlignVCenter
                             property string settingKey: "showDisplayProfiles"
                             checked: false
-                            
+
                             function loadValue() {
-                                var val = mainSettingsCol.loadValue(settingKey, false);
+                                var val = root.loadValue(settingKey, false);
                                 checked = (val === true || val === "true");
                             }
                             Component.onCompleted: loadValue()
-                            
+
                             onToggled: isChecked => {
-                                mainSettingsCol.saveValue(settingKey, isChecked);
+                                checked = isChecked;
+                                root.saveValue(settingKey, isChecked);
                             }
                         }
                     }
+                }
 
-                    Item { width: 1; height: Theme.spacingXS }
+                // Segment 5: Preferred internal display (Text input)
+                Rectangle {
+                    width: parent.width
+                    implicitHeight: prefCol.implicitHeight + Theme.spacingM * 2
+                    color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
+                    border.width: 1
+                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.10)
 
-                    // Preferred internal display
-                    RowLayout {
-                        width: parent.width
-                        spacing: Theme.spacingM
-                        DankIcon { name: "display_settings"; size: 22; Layout.alignment: Qt.AlignVCenter; opacity: 0.8 }
-                        Column {
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: Theme.spacingXXS
-                            StyledText { text: I18n.tr("Preferred internal display"); width: parent.width; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: I18n.tr("The name of your laptop display (e.g. eDP-1). Leave empty for auto-detection."); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
+                    topLeftRadius: root.innerR
+                    topRightRadius: root.innerR
+                    bottomLeftRadius: root.outerR
+                    bottomRightRadius: root.outerR
+
+                    Column {
+                        id: prefCol
+                        anchors.fill: parent
+                        anchors.margins: Theme.spacingM
+                        spacing: Theme.spacingS
+
+                        RowLayout {
+                            width: parent.width
+                            spacing: Theme.spacingM
+
+                            Rectangle {
+                                width: 32
+                                height: 32
+                                radius: 16
+                                color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                                Layout.alignment: Qt.AlignVCenter
+
+                                DankIcon {
+                                    name: "display_settings"
+                                    size: 18
+                                    color: Theme.primary
+                                    anchors.centerIn: parent
+                                }
+                            }
+
+                            Column {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 2
+                                StyledText { text: I18n.tr("Preferred internal display"); font.weight: Font.Medium; color: Theme.surfaceText }
+                                StyledText { text: I18n.tr("The name of your laptop display (e.g. eDP-1). Leave empty for auto-detection."); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; Layout.fillWidth: true; wrapMode: Text.WordWrap }
+                            }
                         }
-                    }
 
-                    DankTextField {
-                        id: fallbackDisplayField
-                        property string settingKey: "fallbackDisplay"
-                        property string defaultValue: ""
-                        width: parent.width
-                        placeholderText: "eDP-1"
-                        
-                        function loadValue() {
-                            text = mainSettingsCol.loadValue(settingKey, defaultValue);
-                        }
-                        Component.onCompleted: loadValue()
-                        onEditingFinished: {
-                            mainSettingsCol.saveValue(settingKey, text);
+                        DankTextField {
+                            id: fallbackDisplayField
+                            property string settingKey: "fallbackDisplay"
+                            property string defaultValue: ""
+                            width: parent.width
+                            placeholderText: "eDP-1"
+
+                            function loadValue() {
+                                text = root.loadValue(settingKey, defaultValue);
+                            }
+                            Component.onCompleted: loadValue()
+                            onEditingFinished: {
+                                root.saveValue(settingKey, text);
+                            }
                         }
                     }
                 }
@@ -247,217 +436,276 @@ PluginSettings {
         }
 
         // --- Interface Settings Section ---
-        Rectangle {
-            id: interfaceRect
+        Column {
             width: parent.width
-            height: interfaceGroup.implicitHeight + Theme.spacingM * 2
-            color: Theme.surfaceContainer
-            radius: Theme.cornerRadius
-            border.color: Theme.outline
-            border.width: 1
-            opacity: 0.8
+            spacing: Theme.spacingS
 
-            function loadValue() {
-                dimSlider.loadValue();
-                transSlider.loadValue();
+            Row {
+                spacing: Theme.spacingXS
+                leftPadding: Theme.spacingM
+                DankIcon {
+                    name: "palette"
+                    size: 16
+                    color: Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                StyledText {
+                    text: I18n.tr("Interface Settings")
+                    font.pixelSize: Theme.fontSizeSmall
+                    font.weight: Font.DemiBold
+                    color: Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
             }
 
             Column {
-                id: interfaceGroup
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingM
+                width: parent.width
+                spacing: 2
 
-                Column {
+                // Segment 1: Backdrop Dim Slider
+                Rectangle {
                     width: parent.width
-                    spacing: Theme.spacingS
+                    implicitHeight: dimCol.implicitHeight + Theme.spacingM * 2
+                    color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
+                    border.width: 1
+                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.10)
 
-                    // Section Title
-                    StyledText {
-                        text: I18n.tr("Interface Settings")
-                        width: parent.width
-                        font.weight: Font.Medium
-                        font.pixelSize: Theme.fontSizeMedium
-                        color: Theme.surfaceText
-                    }
+                    topLeftRadius: root.outerR
+                    topRightRadius: root.outerR
+                    bottomLeftRadius: root.innerR
+                    bottomRightRadius: root.innerR
 
-                    // Backdrop Dim Slider
-                    RowLayout {
-                        width: parent.width
-                        spacing: Theme.spacingM
-                        DankIcon { name: "palette"; size: 22; Layout.alignment: Qt.AlignVCenter; opacity: 0.8 }
-                        Column {
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: Theme.spacingXXS
-                            StyledText { text: I18n.tr("Backdrop Dim"); width: parent.width; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: I18n.tr("Choose the backdrop overlay dim level for the fullscreen settings modal"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                        }
-                        Rectangle {
-                            id: dimResetBtn
-                            width: 32; height: 32
-                            radius: Theme.cornerRadius
-                            Layout.alignment: Qt.AlignVCenter
-                            color: dimResetMa.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
-                            border.color: dimResetMa.containsMouse ? Theme.primary : Theme.outline
-                            border.width: 1
-                            opacity: dimSlider.value !== dimSlider.defaultValue ? (dimResetMa.containsMouse ? 1.0 : 0.9) : 0.0
-                            visible: opacity > 0
-                            scale: dimResetMa.containsMouse ? 1.1 : 1.0
-                            
-                            Behavior on color { ColorAnimation { duration: 150 } }
-                            Behavior on border.color { ColorAnimation { duration: 150 } }
-                            Behavior on opacity { NumberAnimation { duration: 150 } }
-                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+                    Column {
+                        id: dimCol
+                        anchors.fill: parent
+                        anchors.margins: Theme.spacingM
+                        spacing: Theme.spacingS
 
-                            DankRipple { 
-                                id: dimRip
-                                anchors.fill: parent
-                                cornerRadius: parent.radius
-                                rippleColor: Theme.primary 
+                        RowLayout {
+                            width: parent.width
+                            spacing: Theme.spacingM
+
+                            Rectangle {
+                                width: 32
+                                height: 32
+                                radius: 16
+                                color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                                Layout.alignment: Qt.AlignVCenter
+
+                                DankIcon {
+                                    name: "tonality"
+                                    size: 18
+                                    color: Theme.primary
+                                    anchors.centerIn: parent
+                                }
                             }
 
-                            DankIcon {
-                                id: dimResetIcon
-                                name: "restart_alt"
-                                size: 18
-                                anchors.centerIn: parent
-                                color: dimResetMa.containsMouse ? Theme.primary : Theme.surfaceVariantText
-                                rotation: dimResetMa.containsMouse ? 90 : 0
-                                Behavior on rotation { NumberAnimation { duration: 450; easing.type: Easing.OutBack } }
+                            Column {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 2
+                                StyledText { text: I18n.tr("Backdrop Dim"); font.weight: Font.Medium; color: Theme.surfaceText }
+                                StyledText { text: I18n.tr("Backdrop overlay dim level for fullscreen modal"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; Layout.fillWidth: true; elide: Text.ElideRight }
+                            }
+
+                            Rectangle {
+                                id: dimResetBtn
+                                width: 32; height: 32
+                                radius: Theme.cornerRadius
+                                Layout.alignment: Qt.AlignVCenter
+                                color: dimResetMa.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
+                                border.color: dimResetMa.containsMouse ? Theme.primary : Theme.outline
+                                border.width: 1
+                                opacity: dimSlider.value !== dimSlider.defaultValue ? (dimResetMa.containsMouse ? 1.0 : 0.9) : 0.0
+                                visible: opacity > 0
+                                scale: dimResetMa.containsMouse ? 1.1 : 1.0
+
                                 Behavior on color { ColorAnimation { duration: 150 } }
+                                Behavior on border.color { ColorAnimation { duration: 150 } }
+                                Behavior on opacity { NumberAnimation { duration: 150 } }
+                                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+
+                                DankRipple { 
+                                    id: dimRip
+                                    anchors.fill: parent
+                                    cornerRadius: parent.radius
+                                    rippleColor: Theme.primary 
+                                }
+
+                                DankIcon {
+                                    name: "restart_alt"
+                                    size: 18
+                                    anchors.centerIn: parent
+                                    color: dimResetMa.containsMouse ? Theme.primary : Theme.surfaceVariantText
+                                    rotation: dimResetMa.containsMouse ? 90 : 0
+                                    Behavior on rotation { NumberAnimation { duration: 450; easing.type: Easing.OutBack } }
+                                    Behavior on color { ColorAnimation { duration: 150 } }
+                                }
+
+                                MouseArea {
+                                    id: dimResetMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        dimSlider.value = dimSlider.defaultValue;
+                                        root.saveValue(dimSlider.settingKey, dimSlider.defaultValue / 100);
+                                    }
+                                    onPressed: (m) => dimRip.trigger(m.x, m.y)
+                                }
+                            }
+                        }
+
+                        DankSlider {
+                            id: dimSlider
+                            property string settingKey: "backdropDim"
+                            property int defaultValue: 20
+                            width: parent.width
+                            minimum: 0
+                            maximum: 100
+                            step: 1
+                            unit: "%"
+
+                            function loadValue() {
+                                const savedVal = root.loadValue(settingKey, defaultValue / 100);
+                                value = Math.round(parseFloat(savedVal) * 100);
+                            }
+                            Component.onCompleted: loadValue()
+                            onSliderValueChanged: newValue => {
+                                value = newValue;
+                                root.saveValue(settingKey, newValue / 100);
                             }
 
                             MouseArea {
-                                id: dimResetMa
                                 anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    dimSlider.value = dimSlider.defaultValue;
-                                    mainSettingsCol.saveValue(dimSlider.settingKey, dimSlider.defaultValue / 100);
+                                hoverEnabled: false
+                                acceptedButtons: Qt.NoButton
+                                onWheel: (wheel) => { wheel.accepted = true; }
+                            }
+                        }
+                    }
+                }
+
+                // Segment 2: UI Transparency Slider
+                Rectangle {
+                    width: parent.width
+                    implicitHeight: transCol.implicitHeight + Theme.spacingM * 2
+                    color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
+                    border.width: 1
+                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.10)
+
+                    topLeftRadius: root.innerR
+                    topRightRadius: root.innerR
+                    bottomLeftRadius: root.outerR
+                    bottomRightRadius: root.outerR
+
+                    Column {
+                        id: transCol
+                        anchors.fill: parent
+                        anchors.margins: Theme.spacingM
+                        spacing: Theme.spacingS
+
+                        RowLayout {
+                            width: parent.width
+                            spacing: Theme.spacingM
+
+                            Rectangle {
+                                width: 32
+                                height: 32
+                                radius: 16
+                                color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                                Layout.alignment: Qt.AlignVCenter
+
+                                DankIcon {
+                                    name: "opacity"
+                                    size: 18
+                                    color: Theme.primary
+                                    anchors.centerIn: parent
                                 }
-                                onPressed: (m) => dimRip.trigger(m.x, m.y)
-                            }
-                        }
-                    }
-
-                    DankSlider {
-                        id: dimSlider
-                        property string settingKey: "backdropDim"
-                        property int defaultValue: 20
-                        width: parent.width
-                        minimum: 0
-                        maximum: 100
-                        step: 1
-                        unit: "%"
-                        
-                        function loadValue() {
-                            const savedVal = mainSettingsCol.loadValue(settingKey, defaultValue / 100);
-                            value = Math.round(parseFloat(savedVal) * 100);
-                        }
-                        Component.onCompleted: loadValue()
-                        onSliderValueChanged: newValue => {
-                            value = newValue;
-                            mainSettingsCol.saveValue(settingKey, newValue / 100);
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: false
-                            acceptedButtons: Qt.NoButton
-                            onWheel: (wheel) => { wheel.accepted = true; }
-                        }
-                    }
-
-                    Item { width: 1; height: Theme.spacingXS }
-
-                    // UI Transparency Slider
-                    RowLayout {
-                        width: parent.width
-                        spacing: Theme.spacingM
-                        DankIcon { name: "opacity"; size: 22; Layout.alignment: Qt.AlignVCenter; opacity: 0.8 }
-                        Column {
-                            Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignVCenter
-                            spacing: Theme.spacingXXS
-                            StyledText { text: I18n.tr("UI Transparency"); width: parent.width; font.weight: Font.Medium; color: Theme.surfaceText }
-                            StyledText { text: I18n.tr("Choose the UI transparency level for the settings modal cards"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; width: parent.width; wrapMode: Text.WordWrap }
-                        }
-                        Rectangle {
-                            id: transResetBtn
-                            width: 32; height: 32
-                            radius: Theme.cornerRadius
-                            Layout.alignment: Qt.AlignVCenter
-                            color: transResetMa.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
-                            border.color: transResetMa.containsMouse ? Theme.primary : Theme.outline
-                            border.width: 1
-                            opacity: transSlider.value !== transSlider.defaultValue ? (transResetMa.containsMouse ? 1.0 : 0.9) : 0.0
-                            visible: opacity > 0
-                            scale: transResetMa.containsMouse ? 1.1 : 1.0
-                            
-                            Behavior on color { ColorAnimation { duration: 150 } }
-                            Behavior on border.color { ColorAnimation { duration: 150 } }
-                            Behavior on opacity { NumberAnimation { duration: 150 } }
-                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-
-                            DankRipple { 
-                                id: transRip
-                                anchors.fill: parent
-                                cornerRadius: parent.radius
-                                rippleColor: Theme.primary 
                             }
 
-                            DankIcon {
-                                id: transResetIcon
-                                name: "restart_alt"
-                                size: 18
-                                anchors.centerIn: parent
-                                color: transResetMa.containsMouse ? Theme.primary : Theme.surfaceVariantText
-                                rotation: transResetMa.containsMouse ? 90 : 0
-                                Behavior on rotation { NumberAnimation { duration: 450; easing.type: Easing.OutBack } }
+                            Column {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignVCenter
+                                spacing: 2
+                                StyledText { text: I18n.tr("UI Transparency"); font.weight: Font.Medium; color: Theme.surfaceText }
+                                StyledText { text: I18n.tr("UI transparency level for settings modal cards"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; Layout.fillWidth: true; elide: Text.ElideRight }
+                            }
+
+                            Rectangle {
+                                id: transResetBtn
+                                width: 32; height: 32
+                                radius: Theme.cornerRadius
+                                Layout.alignment: Qt.AlignVCenter
+                                color: transResetMa.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
+                                border.color: transResetMa.containsMouse ? Theme.primary : Theme.outline
+                                border.width: 1
+                                opacity: transSlider.value !== transSlider.defaultValue ? (transResetMa.containsMouse ? 1.0 : 0.9) : 0.0
+                                visible: opacity > 0
+                                scale: transResetMa.containsMouse ? 1.1 : 1.0
+
                                 Behavior on color { ColorAnimation { duration: 150 } }
+                                Behavior on border.color { ColorAnimation { duration: 150 } }
+                                Behavior on opacity { NumberAnimation { duration: 150 } }
+                                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+
+                                DankRipple { 
+                                    id: transRip
+                                    anchors.fill: parent
+                                    cornerRadius: parent.radius
+                                    rippleColor: Theme.primary 
+                                }
+
+                                DankIcon {
+                                    name: "restart_alt"
+                                    size: 18
+                                    anchors.centerIn: parent
+                                    color: transResetMa.containsMouse ? Theme.primary : Theme.surfaceVariantText
+                                    rotation: transResetMa.containsMouse ? 90 : 0
+                                    Behavior on rotation { NumberAnimation { duration: 450; easing.type: Easing.OutBack } }
+                                    Behavior on color { ColorAnimation { duration: 150 } }
+                                }
+
+                                MouseArea {
+                                    id: transResetMa
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        transSlider.value = transSlider.defaultValue;
+                                        root.saveValue(transSlider.settingKey, transSlider.defaultValue / 100);
+                                    }
+                                    onPressed: (m) => transRip.trigger(m.x, m.y)
+                                }
+                            }
+                        }
+
+                        DankSlider {
+                            id: transSlider
+                            property string settingKey: "uiTransparency"
+                            property int defaultValue: 50
+                            width: parent.width
+                            minimum: 0
+                            maximum: 100
+                            step: 1
+                            unit: "%"
+
+                            function loadValue() {
+                                const savedVal = root.loadValue(settingKey, defaultValue / 100);
+                                value = Math.round(parseFloat(savedVal) * 100);
+                            }
+                            Component.onCompleted: loadValue()
+                            onSliderValueChanged: newValue => {
+                                value = newValue;
+                                root.saveValue(settingKey, newValue / 100);
                             }
 
                             MouseArea {
-                                id: transResetMa
                                 anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    transSlider.value = transSlider.defaultValue;
-                                    mainSettingsCol.saveValue(transSlider.settingKey, transSlider.defaultValue / 100);
-                                }
-                                onPressed: (m) => transRip.trigger(m.x, m.y)
+                                hoverEnabled: false
+                                acceptedButtons: Qt.NoButton
+                                onWheel: (wheel) => { wheel.accepted = true; }
                             }
-                        }
-                    }
-
-                    DankSlider {
-                        id: transSlider
-                        property string settingKey: "uiTransparency"
-                        property int defaultValue: 50
-                        width: parent.width
-                        minimum: 0
-                        maximum: 100
-                        step: 1
-                        unit: "%"
-                        
-                        function loadValue() {
-                            const savedVal = mainSettingsCol.loadValue(settingKey, defaultValue / 100);
-                            value = Math.round(parseFloat(savedVal) * 100);
-                        }
-                        Component.onCompleted: loadValue()
-                        onSliderValueChanged: newValue => {
-                            value = newValue;
-                            mainSettingsCol.saveValue(settingKey, newValue / 100);
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            hoverEnabled: false
-                            acceptedButtons: Qt.NoButton
-                            onWheel: (wheel) => { wheel.accepted = true; }
                         }
                     }
                 }
@@ -465,33 +713,43 @@ PluginSettings {
         }
 
         // --- Commands & Shortcuts Section ---
-        Rectangle {
-            id: shortcutsRect
+        Column {
             width: parent.width
-            height: shortcutsGroup.implicitHeight + Theme.spacingM * 2
-            color: Theme.surfaceContainer
-            radius: Theme.cornerRadius
-            border.color: Theme.outline
-            border.width: 1
-            opacity: 0.8
+            spacing: Theme.spacingS
 
-            Column {
-                id: shortcutsGroup
-                anchors.fill: parent
-                anchors.margins: Theme.spacingM
-                spacing: Theme.spacingM
+            Row {
+                spacing: Theme.spacingXS
+                leftPadding: Theme.spacingM
+                DankIcon {
+                    name: "terminal"
+                    size: 16
+                    color: Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                StyledText {
+                    text: I18n.tr("Commands & Shortcuts")
+                    font.pixelSize: Theme.fontSizeSmall
+                    font.weight: Font.DemiBold
+                    color: Theme.primary
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
+            Rectangle {
+                width: parent.width
+                implicitHeight: cmdInnerCol.implicitHeight + Theme.spacingM * 2
+                radius: root.outerR
+                color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
+                border.width: 1
+                border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.10)
 
                 Column {
-                    width: parent.width
-                    spacing: Theme.spacingS
-
-                    StyledText {
-                        text: I18n.tr("Commands & Shortcuts")
-                        width: parent.width
-                        font.weight: Font.Medium
-                        font.pixelSize: Theme.fontSizeMedium
-                        color: Theme.surfaceText
-                    }
+                    id: cmdInnerCol
+                    width: parent.width - Theme.spacingM * 2
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: Theme.spacingM
+                    spacing: Theme.spacingM
 
                     StyledText {
                         width: parent.width
@@ -548,4 +806,3 @@ PluginSettings {
         }
     }
 }
-

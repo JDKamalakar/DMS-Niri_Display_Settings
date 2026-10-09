@@ -254,6 +254,10 @@ Item {
                 fzfFinder = null;
                 searchQuery = "";
             }
+            Qt.callLater(() => {
+                if (root.enableFuzzySearch) searchField.forceActiveFocus();
+                else dropdownMenu.forceActiveFocus();
+            });
         }
 
         parent: Overlay.overlay
@@ -325,6 +329,11 @@ Item {
                         Keys.onReturnPressed: dropdownMenu.selectCurrent()
                         Keys.onEnterPressed: dropdownMenu.selectCurrent()
                         Keys.onPressed: event => {
+                            if (event.key === Qt.Key_Escape) {
+                                dropdownMenu.close();
+                                event.accepted = true;
+                                return;
+                            }
                             if (!(event.modifiers & Qt.ControlModifier))
                                 return;
                             switch (event.key) {
