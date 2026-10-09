@@ -1,7 +1,7 @@
 {
   "id": "niriDSA",
   "name": "Niri Display Settings Advance",
-  "description": "Quickly toggle and configure display outputs in the Niri Wayland compositor",
+  "description": "Advanced display manager for Niri with instant projection modes, auto-profile switching, per-output resolution/refresh rate/scale/VRR controls, and hotplug automation.",
   "category": "utilities",
   "version": "2.1.0",
   "author": "JDKamalakar",

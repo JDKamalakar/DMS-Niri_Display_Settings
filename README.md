@@ -91,17 +91,22 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 Before reporting a new issue, take a look at the [changelog](https://github.com/JDKamalakar/DMS-Niri_Display_Settings/releases) and the already opened [issues](https://github.com/JDKamalakar/DMS-Niri_Display_Settings/issues).
 
-### Credits
+### Upstream Relationship & Feature Comparison
 
-Built with ❤️ for the [Dank Material Shell](https://github.com/DankMaterialShell) community.
+This plugin (`niriDSA`) expands upon basic Niri display toggling concept (originally seen in `hthienloc-niriDS`) by adding comprehensive display management capabilities:
+
+- **Advanced Per-Output Customization**: Individual control of Resolution, Refresh Rate, Fractional Scaling, Transform/Rotation, Variable Refresh Rate (VRR, On-Demand), and Column centering.
+- **Reactive Architecture**: Replaced interval polling with direct reactive signal bindings (`NiriService.outputs`) for zero-lag hotplug response and minimal system footprint.
+- **Display Profiles & Auto-Matching**: Automated display profile detection, profile auto-select based on connected hardware setups, and single-screen/multi-monitor management.
+- **Enhanced UI**: Glassmorphic fullscreen dashboard card, search-enabled `NiriDankDropdown`, customizable backdrop dimming, and UI transparency options.
+
+### Credits & Acknowledgments
+
+Built with ❤️ for the [Dank Material Shell](https://github.com/DankMaterialShell) community. Original Niri display toggle inspiration credited to `hthienloc-niriDS`.
 
 <a href="https://github.com/JDKamalakar/DMS-Niri_Display_Settings/graphs/contributors">
     <img src="https://contrib.rocks/image?repo=JDKamalakar/DMS-Niri_Display_Settings" alt="Niri Display Settings contributors" title="Niri Display Settings contributors" width="100"/>
 </a>
-
-### Disclaimer
-
-This plugin is part of the Dank Material Shell suite for display management in Niri.
 
 ### 📜 License
 
