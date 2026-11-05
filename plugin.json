@@ -3,7 +3,7 @@
   "name": "Niri Display Settings Advance",
   "description": "Advanced display manager for Niri with instant projection modes, auto-profile switching, per-output resolution/refresh rate/scale/VRR controls, and hotplug automation.",
   "category": "utilities",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "author": "JDKamalakar",
   "icon": "computer",
   "type": "composite",
