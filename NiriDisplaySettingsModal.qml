@@ -14,31 +14,27 @@ import qs.Modules.Settings.DisplayConfig
 Item {
     id: root
 
-    property bool shouldBeVisible: false
-    onShouldBeVisibleChanged: {
-        if (overlay.visible !== shouldBeVisible) {
-            overlay.visible = shouldBeVisible;
-        }
-        if (shouldBeVisible) {
-            NiriDS.detectFocusedOutput();
-            NiriDS.setDisplays();
-        }
-    }
+    property bool isPresented: false
 
     function open() {
         activeCustomizationDisplay = null;
         NiriDS.detectFocusedOutput();
         NiriDS.setDisplays();
+        closeTimer.stop();
         overlay.visible = true;
+        bgOverlay.visible = true;
+        Qt.callLater(() => {
+            root.isPresented = true;
+        });
     }
 
     function close() {
-        overlay.visible = false;
-        activeCustomizationDisplay = null;
+        root.isPresented = false;
+        closeTimer.restart();
     }
 
     function toggle() {
-        if (overlay.visible) {
+        if (overlay.visible && root.isPresented) {
             close();
         } else {
             open();
@@ -49,7 +45,17 @@ Item {
         open();
     }
 
-
+    Timer {
+        id: closeTimer
+        interval: 220
+        onTriggered: {
+            if (!root.isPresented) {
+                overlay.visible = false;
+                bgOverlay.visible = false;
+                root.activeCustomizationDisplay = null;
+            }
+        }
+    }
 
     readonly property bool isDarkTheme: (Theme.surface.r * 0.299 + Theme.surface.g * 0.587 + Theme.surface.b * 0.114) < 0.5
 
@@ -719,8 +725,13 @@ Item {
         Rectangle {
             anchors.fill: parent
             color: "black"
-            opacity: bgOverlay.visible ? root.backdropDim : 0
-            Behavior on opacity { NumberAnimation { duration: 150 } }
+            opacity: root.isPresented ? root.backdropDim : 0
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 180
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             MouseArea {
                 anchors.fill: parent
@@ -865,6 +876,22 @@ Item {
                 border.width: 1
                 border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
                 clip: true
+
+                opacity: root.isPresented ? 1.0 : 0.0
+                scale: root.isPresented ? 1.0 : 0.95
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 180
+                        easing.type: Easing.OutQuad
+                    }
+                }
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 200
+                        easing.type: Easing.OutCubic
+                    }
+                }
 
                 // Intercept clicks inside the dashboard card so they don't bubble up to close the modal
                 MouseArea {
@@ -1251,13 +1278,13 @@ Item {
                         Keys.onEscapePressed: (event) => {
                             root.activeCustomizationDisplay = null;
                             event.accepted = true;
-                            if (modalFocusScope) modalFocusScope.forceActiveFocus();
+                            globalKeyHandler.forceActiveFocus();
                         }
                         Keys.onPressed: (event) => {
                             if (event.key === Qt.Key_Escape) {
                                 root.activeCustomizationDisplay = null;
                                 event.accepted = true;
-                                if (modalFocusScope) modalFocusScope.forceActiveFocus();
+                                globalKeyHandler.forceActiveFocus();
                             }
                         }
                         onActiveChanged: {
@@ -1265,7 +1292,7 @@ Item {
                                 Qt.callLater(() => customizationOverlay.forceActiveFocus());
                             } else {
                                 Qt.callLater(() => {
-                                    if (modalFocusScope) modalFocusScope.forceActiveFocus();
+                                    globalKeyHandler.forceActiveFocus();
                                 });
                             }
                         }

@@ -29,30 +29,16 @@ PluginComponent {
         target: "niriDSA"
 
         function toggle(): string {
-            if (displayModal.shouldBeVisible) {
-                displayModal.shouldBeVisible = false;
-                displayModal.close();
-            } else {
-                displayModal.activeCustomizationDisplay = null;
-                NiriDS.detectFocusedOutput();
-                NiriDS.setDisplays();
-                displayModal.shouldBeVisible = true;
-                displayModal.openCentered();
-            }
+            displayModal.toggle();
             return "SUCCESS";
         }
 
         function open(): string {
-            displayModal.activeCustomizationDisplay = null;
-            NiriDS.detectFocusedOutput();
-            NiriDS.setDisplays();
-            displayModal.shouldBeVisible = true;
-            displayModal.openCentered();
+            displayModal.open();
             return "SUCCESS";
         }
 
         function close(): string {
-            displayModal.shouldBeVisible = false;
             displayModal.close();
             return "SUCCESS";
         }
@@ -99,11 +85,7 @@ PluginComponent {
                 : "show_menu";
 
             if (action === "show_menu") {
-                displayModal.activeCustomizationDisplay = null;
-                NiriDS.detectFocusedOutput();
-                NiriDS.setDisplays();
-                displayModal.shouldBeVisible = true;
-                displayModal.openCentered();
+                displayModal.open();
             } else if (action !== "none") {
                 NiriDS.apply(action);
             }
@@ -136,11 +118,7 @@ PluginComponent {
     ccDetailHeight: 480
     
     onCcWidgetToggled: {
-        displayModal.activeCustomizationDisplay = null;
-        NiriDS.detectFocusedOutput();
-        NiriDS.setDisplays();
-        displayModal.shouldBeVisible = true;
-        displayModal.openCentered();
+        displayModal.open();
     }
 
     ccDetailContent: Component {
