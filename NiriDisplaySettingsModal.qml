@@ -2,19 +2,52 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtQuick.Shapes
-
 import Quickshell
+import Quickshell.Wayland
+import Quickshell.Widgets
 import qs.Common
-import qs.Modals.Common
 import qs.Services
 import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Settings.DisplayConfig
 
-DankModal {
+Item {
     id: root
 
-    layerNamespace: "dms:plugins:niriDSA"
-    keepPopoutsOpen: true
+    property bool shouldBeVisible: false
+    onShouldBeVisibleChanged: {
+        if (overlay.visible !== shouldBeVisible) {
+            overlay.visible = shouldBeVisible;
+        }
+        if (shouldBeVisible) {
+            NiriDS.detectFocusedOutput();
+            NiriDS.setDisplays();
+        }
+    }
+
+    function open() {
+        activeCustomizationDisplay = null;
+        NiriDS.detectFocusedOutput();
+        NiriDS.setDisplays();
+        overlay.visible = true;
+    }
+
+    function close() {
+        overlay.visible = false;
+        activeCustomizationDisplay = null;
+    }
+
+    function toggle() {
+        if (overlay.visible) {
+            close();
+        } else {
+            open();
+        }
+    }
+
+    function openCentered() {
+        open();
+    }
 
 
 
@@ -75,20 +108,6 @@ DankModal {
             return list.filter(d => !NiriDS.isInternal(d));
         }
         return list;
-    }
-
-    onVisibleChanged: {
-        if (visible) {
-            NiriDS.detectFocusedOutput();
-            NiriDS.setDisplays();
-        }
-    }
-
-    onShouldBeVisibleChanged: {
-        if (shouldBeVisible) {
-            NiriDS.detectFocusedOutput();
-            NiriDS.setDisplays();
-        }
     }
 
     component ProjectionCard: Item {
@@ -679,155 +698,178 @@ DankModal {
         return names.some(n => n && !NiriDS.isInternalName(n));
     }
 
-    function openCentered() {
-        parentBounds = Qt.rect(0, 0, 0, 0);
-        backgroundOpacity = 0.5;
-        open();
-        NiriDS.setDisplays();
-    }
+    // Backdrop Dim Window (Explicitly blur=false in Niri float.kdl)
+    PanelWindow {
+        id: bgOverlay
+        visible: overlay.visible
+        color: "transparent"
 
-    shouldBeVisible: false
-    modalWidth: isFullScreen ? screenWidth : 400
-    modalHeight: isFullScreen ? screenHeight : ((typeof contentLoader !== 'undefined' && contentLoader && contentLoader.item) ? contentLoader.item.implicitHeight : 450)
-    enableShadow: !isFullScreen
-    positioning: isFullScreen ? "center" : (parentBounds.width > 0 ? "custom" : "center")
+        WlrLayershell.namespace: "dms:plugins:niriDSA:dim"
+        WlrLayershell.layer: WlrLayershell.Overlay
+        WlrLayershell.exclusiveZone: -1
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
-    customPosition: {
-        if (!isFullScreen && parentBounds.width > 0) {
-            const centerX = parentBounds.x + (parentBounds.width - modalWidth) / 2;
-            const centerY = parentBounds.y + (parentBounds.height - modalHeight) / 2;
-            return Qt.point(centerX, centerY);
-        }
-        return Qt.point(0, 0);
-    }
-
-    onBackgroundClicked: () => close()
-    onOpened: () => {
-        const displays = root.filteredDisplays || [];
-        const enabledCount = displays.filter(d => !d.disabled).length;
-        
-        let firstSelectable = 0;
-        for (let i = 0; i < displays.length; i++) {
-            const isLast = enabledCount === 1 && !displays[i].disabled;
-            if (!isLast) {
-                firstSelectable = i;
-                break;
-            }
-        }
-        selectedIndex = firstSelectable;
-        Qt.callLater(() => {
-            if (modalFocusScope) modalFocusScope.forceActiveFocus();
-        });
-    }
-
-    onDialogClosed: () => {
-        activeCustomizationDisplay = null;
-    }
-
-    modalFocusScope.Keys.onPressed: event => {
-        if (event.key === Qt.Key_Escape) {
-            if (customizationOverlay.active) {
-                root.activeCustomizationDisplay = null;
-            } else {
-                root.close();
-            }
-            event.accepted = true;
-            return;
+        anchors {
+            top: true
+            left: true
+            right: true
+            bottom: true
         }
 
-        function getNextEnabledIndex(current, direction) {
-            const displays = root.filteredDisplays || [];
-            let count = 0;
-            let index = current;
-            
-            while (count < optionCount) {
-                index = (index + direction + optionCount) % optionCount;
-                const item = displays[index];
-                const isLast = displays.filter(d => !d.disabled).length === 1 && !item.disabled;
-                if (!isLast) return index;
-                count++;
-            }
-            return current;
-        }
+        Rectangle {
+            anchors.fill: parent
+            color: "black"
+            opacity: bgOverlay.visible ? root.backdropDim : 0
+            Behavior on opacity { NumberAnimation { duration: 150 } }
 
-        switch (event.key) {
-            case Qt.Key_Up:
-            case Qt.Key_Backtab:
-                selectedIndex = getNextEnabledIndex(selectedIndex, -1);
-                event.accepted = true;
-                break;
-            case Qt.Key_Down:
-            case Qt.Key_Tab:
-                selectedIndex = getNextEnabledIndex(selectedIndex, 1);
-                event.accepted = true;
-                break;
-            case Qt.Key_Return:
-            case Qt.Key_Enter:
-                if (optionCount > 0) {
-                    const item = root.filteredDisplays?.[selectedIndex];
-                    const enabledCount = (root.filteredDisplays || []).filter(d => !d.disabled).length;
-                    const isLast = enabledCount === 1 && !item?.disabled;
-                    if (!isLast) NiriDS.toggleDisable(item);
-                }
-                event.accepted = true;
-                break;
-            case Qt.Key_1: 
-                if (hasExternal) { NiriDS.apply("external_only"); root.close(); }
-                event.accepted = true; 
-                break;
-            case Qt.Key_2: 
-                if (hasExternal) { NiriDS.apply("extend"); root.close(); }
-                event.accepted = true; 
-                break;
-            case Qt.Key_3:
-                if (hasExternal) { NiriDS.apply("mirror"); root.close(); }
-                event.accepted = true; break;
-            case Qt.Key_4: 
-                if (!root.disableInternalOption) { NiriDS.apply("internal_only"); root.close(); }
-                event.accepted = true; 
-                break;
-        }
-    }
-
-    content: Component {
-        Item {
-            implicitHeight: root.screenHeight
-            width: root.screenWidth
-
-            // Full Screen Wrapper (Dashboard UI)
-            Item {
+            MouseArea {
                 anchors.fill: parent
+                onClicked: root.close()
+            }
+        }
+    }
 
-                // Dark blurred glassmorphic overlay for full screen background
+    // Interactive Dashboard Window (Targeted blur on card only via Region)
+    PanelWindow {
+        id: overlay
+        visible: false
+        color: "transparent"
+
+        WlrLayershell.namespace: "dms:plugins:niriDSA:modal"
+        WlrLayershell.layer: WlrLayershell.Overlay
+        WlrLayershell.exclusiveZone: -1
+        WlrLayershell.keyboardFocus: overlay.visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+
+        anchors {
+            top: true
+            left: true
+            right: true
+            bottom: true
+        }
+
+        onVisibleChanged: {
+            if (visible) {
+                const displays = root.filteredDisplays || [];
+                const enabledCount = displays.filter(d => !d.disabled).length;
+                let firstSelectable = 0;
+                for (let i = 0; i < displays.length; i++) {
+                    const isLast = enabledCount === 1 && !displays[i].disabled;
+                    if (!isLast) {
+                        firstSelectable = i;
+                        break;
+                    }
+                }
+                root.selectedIndex = firstSelectable;
+                globalKeyHandler.forceActiveFocus();
+            } else {
+                root.activeCustomizationDisplay = null;
+            }
+        }
+
+        BackgroundEffect.blurRegion: visible ? dashboardBlurRegion : null
+
+        Region {
+            id: dashboardBlurRegion
+            x: dashboardCard.x
+            y: dashboardCard.y
+            width: dashboardCard.width
+            height: dashboardCard.height
+            radius: dashboardCard.radius
+        }
+
+        Item {
+            id: globalKeyHandler
+            anchors.fill: parent
+            focus: overlay.visible
+
+            function getNextEnabledIndex(current, direction) {
+                const displays = root.filteredDisplays || [];
+                let count = 0;
+                let index = current;
+                
+                while (count < optionCount) {
+                    index = (index + direction + optionCount) % optionCount;
+                    const item = displays[index];
+                    const isLast = displays.filter(d => !d.disabled).length === 1 && !item.disabled;
+                    if (!isLast) return index;
+                    count++;
+                }
+                return current;
+            }
+
+            Keys.onPressed: (event) => {
+                if (event.key === Qt.Key_Escape) {
+                    if (customizationOverlay.active) {
+                        root.activeCustomizationDisplay = null;
+                    } else {
+                        root.close();
+                    }
+                    event.accepted = true;
+                    return;
+                }
+
+                switch (event.key) {
+                    case Qt.Key_Up:
+                    case Qt.Key_Backtab:
+                        selectedIndex = getNextEnabledIndex(selectedIndex, -1);
+                        event.accepted = true;
+                        break;
+                    case Qt.Key_Down:
+                    case Qt.Key_Tab:
+                        selectedIndex = getNextEnabledIndex(selectedIndex, 1);
+                        event.accepted = true;
+                        break;
+                    case Qt.Key_Return:
+                    case Qt.Key_Enter:
+                        if (optionCount > 0) {
+                            const item = root.filteredDisplays?.[selectedIndex];
+                            const enabledCount = (root.filteredDisplays || []).filter(d => !d.disabled).length;
+                            const isLast = enabledCount === 1 && !item?.disabled;
+                            if (!isLast) NiriDS.toggleDisable(item);
+                        }
+                        event.accepted = true;
+                        break;
+                    case Qt.Key_1: 
+                        if (hasExternal) { NiriDS.apply("external_only"); root.close(); }
+                        event.accepted = true; 
+                        break;
+                    case Qt.Key_2: 
+                        if (hasExternal) { NiriDS.apply("extend"); root.close(); }
+                        event.accepted = true; 
+                        break;
+                    case Qt.Key_3:
+                        if (hasExternal) { NiriDS.apply("mirror"); root.close(); }
+                        event.accepted = true; break;
+                    case Qt.Key_4: 
+                        if (!root.disableInternalOption) { NiriDS.apply("internal_only"); root.close(); }
+                        event.accepted = true; 
+                        break;
+                }
+            }
+
+            // Click outside card closes
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.close()
+            }
+
+            // Centered Dashboard Card
+            StyledRect {
+                id: dashboardCard
+                width: Math.max(0, Math.min(1120, parent.width - 32))
+                height: Math.max(0, Math.min(mainLayout.implicitHeight + Theme.spacingL * 2, parent.height - 16))
+                Behavior on height { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
+                anchors.centerIn: parent
+                radius: Theme.cornerRadius * 1.8
+                color: Theme.withAlpha(Theme.surfaceContainerHigh, root.uiTransparency)
+                border.width: 1
+                border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                clip: true
+
+                // Intercept clicks inside the dashboard card so they don't bubble up to close the modal
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: root.close()
-
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: parent.width * 1.5
-                        height: parent.height * 1.5
-                        color: Theme.withAlpha(root.blackColor, root.backdropDim)
-                    }
                 }
-
-                // Centered Dashboard Card
-                StyledRect {
-                    id: dashboardCard
-                    width: Math.max(0, Math.min(1120, parent.width - 32))
-                    height: Math.max(0, Math.min(mainLayout.implicitHeight + Theme.spacingL * 2, parent.height - 16))
-                    Behavior on height { NumberAnimation { duration: 350; easing.type: Easing.OutCubic } }
-                    anchors.centerIn: parent
-                    radius: Theme.cornerRadius * 1.8
-                    color: Theme.withAlpha(Theme.surfaceContainerHigh, root.uiTransparency)
-                    border.width: 1
-                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
-                    clip: true
-
-                    // Intercept clicks inside the dashboard card so they don't bubble up to close the modal
-                    MouseArea {
-                        anchors.fill: parent
-                    }
 
                     ColumnLayout {
                         id: mainLayout
@@ -924,12 +966,21 @@ DankModal {
                                         rippleColor: Theme.primary 
                                     }
 
-                                    DankIcon {
-                                        id: refreshIcon
-                                        name: fsHeaderRefreshBtnItem.isLoading ? "cached" : "refresh"
-                                        size: 18
+                                    DLoadingIndicator {
+                                        size: 28
                                         color: Theme.primary
                                         anchors.centerIn: parent
+                                        visible: fsHeaderRefreshBtnItem.isLoading
+                                        running: fsHeaderRefreshBtnItem.isLoading
+                                    }
+
+                                    DankIcon {
+                                        id: refreshIcon
+                                        name: "refresh"
+                                        size: 20
+                                        color: Theme.primary
+                                        anchors.centerIn: parent
+                                        visible: !fsHeaderRefreshBtnItem.isLoading
 
                                         SequentialAnimation {
                                             id: hoverSpinAnim
@@ -939,14 +990,6 @@ DankModal {
                                             NumberAnimation { target: refreshIcon; property: "rotation"; from: 0; to: 8; duration: 200; easing.type: Easing.OutQuad }
                                             NumberAnimation { target: refreshIcon; property: "rotation"; from: 8; to: -8; duration: 400; easing.type: Easing.InOutQuad }
                                             NumberAnimation { target: refreshIcon; property: "rotation"; from: -8; to: 0; duration: 200; easing.type: Easing.InQuad }
-                                        }
-
-                                        RotationAnimation on rotation {
-                                            from: 0
-                                            to: 360
-                                            duration: 1000
-                                            loops: Animation.Infinite; running: fsHeaderRefreshBtnItem.isLoading
-                                            onStopped: refreshIcon.rotation = 0
                                         }
                                     }
                                 }
@@ -1665,5 +1708,3 @@ DankModal {
             }
         }
     }
-}
-

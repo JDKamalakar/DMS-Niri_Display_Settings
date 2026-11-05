@@ -7,6 +7,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Widgets
+import qs.DCommon.Widgets
 import qs.Modules.Plugins
 import qs.Services
 import qs.Modules.Settings.DisplayConfig
@@ -306,12 +307,21 @@ PluginComponent {
                             Behavior on border.color { ColorAnimation { duration: 150 } }
                         }
 
+                        DLoadingIndicator {
+                            size: 28
+                            color: Theme.primary
+                            anchors.centerIn: parent
+                            visible: refreshBtnItem.isLoading
+                            running: refreshBtnItem.isLoading
+                        }
+
                         DankIcon {
                             id: refreshIcon
-                            name: refreshBtnItem.isLoading ? "cached" : "refresh"
+                            name: "refresh"
                             size: 20
                             color: Theme.primary
                             anchors.centerIn: parent
+                            visible: !refreshBtnItem.isLoading
 
                             SequentialAnimation {
                                 id: hoverSpinAnim
@@ -321,14 +331,6 @@ PluginComponent {
                                 NumberAnimation { target: refreshIcon; property: "rotation"; from: 0; to: 8; duration: 200; easing.type: Easing.OutQuad }
                                 NumberAnimation { target: refreshIcon; property: "rotation"; from: 8; to: -8; duration: 400; easing.type: Easing.InOutQuad }
                                 NumberAnimation { target: refreshIcon; property: "rotation"; from: -8; to: 0; duration: 200; easing.type: Easing.InQuad }
-                            }
-
-                            RotationAnimation on rotation {
-                                from: 0
-                                to: 360
-                                duration: 1000
-                                loops: Animation.Infinite; running: refreshBtnItem.isLoading
-                                onStopped: refreshIcon.rotation = 0
                             }
                         }
 

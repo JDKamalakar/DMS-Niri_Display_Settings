@@ -3,18 +3,20 @@
   "name": "Niri Display Settings Advance",
   "description": "Advanced display manager for Niri with instant projection modes, auto-profile switching, per-output resolution/refresh rate/scale/VRR controls, and hotplug automation.",
   "category": "utilities",
-  "version": "2.1.0",
+  "version": "2.1.2",
   "author": "JDKamalakar",
   "icon": "computer",
-  "type": [
-    "widget",
-    "daemon"
-  ],
+  "type": "composite",
+  "components": {
+    "widget": "./NiriDisplaySettingsWidget.qml",
+    "daemon": "./NiriDisplaySettingsWidget.qml"
+  },
   "component": "./NiriDisplaySettingsWidget.qml",
   "settings": "./NiriDisplaySettings.qml",
   "capabilities": [
     "control-center",
-    "dankbar-widget"
+    "dankbar-widget",
+    "ipc"
   ],
   "repo": "https://github.com/jdkamalakar/DMS-Niri_Display_Settings",
   "compositors": [

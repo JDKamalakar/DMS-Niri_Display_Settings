@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
@@ -12,6 +13,35 @@ PluginSettings {
 
     readonly property real outerR: Theme.cornerRadius || 12
     readonly property real innerR: 4
+
+    component SectionHeader: Row {
+        property string title: ""
+        property string iconName: ""
+
+        spacing: Theme.spacingXS
+        leftPadding: Theme.spacingM
+
+        DankIcon {
+            name: iconName
+            size: 16
+            color: Theme.primary
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        StyledText {
+            text: title
+            font.pixelSize: Theme.fontSizeSmall
+            font.weight: Font.DemiBold
+            color: Theme.primary
+            anchors.verticalCenter: parent.verticalCenter
+        }
+    }
+
+    Process {
+        id: launchProcess
+        command: ["dms", "ipc", "call", "niriDSA", "toggle"]
+        running: false
+    }
 
     function loadValue(key, def) {
         if (typeof PluginService !== "undefined" && PluginService && PluginService.loadPluginData) {
@@ -440,22 +470,9 @@ PluginSettings {
             width: parent.width
             spacing: Theme.spacingS
 
-            Row {
-                spacing: Theme.spacingXS
-                leftPadding: Theme.spacingM
-                DankIcon {
-                    name: "palette"
-                    size: 16
-                    color: Theme.primary
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-                StyledText {
-                    text: I18n.tr("Interface Settings")
-                    font.pixelSize: Theme.fontSizeSmall
-                    font.weight: Font.DemiBold
-                    color: Theme.primary
-                    anchors.verticalCenter: parent.verticalCenter
-                }
+            SectionHeader {
+                title: I18n.tr("Interface Settings")
+                iconName: "palette"
             }
 
             Column {
@@ -465,7 +482,7 @@ PluginSettings {
                 // Segment 1: Backdrop Dim Slider
                 Rectangle {
                     width: parent.width
-                    implicitHeight: dimCol.implicitHeight + Theme.spacingM * 2
+                    height: dimCol.implicitHeight + Theme.spacingM * 2
                     color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
                     border.width: 1
                     border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.10)
@@ -475,113 +492,24 @@ PluginSettings {
                     bottomLeftRadius: root.innerR
                     bottomRightRadius: root.innerR
 
-                    Column {
+                    ColumnLayout {
                         id: dimCol
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingM
+                        anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: Theme.spacingM; anchors.rightMargin: Theme.spacingM
                         spacing: Theme.spacingS
 
-                        RowLayout {
-                            width: parent.width
-                            spacing: Theme.spacingM
-
-                            Rectangle {
-                                width: 32
-                                height: 32
-                                radius: 16
-                                color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
-                                Layout.alignment: Qt.AlignVCenter
-
-                                DankIcon {
-                                    name: "tonality"
-                                    size: 18
-                                    color: Theme.primary
-                                    anchors.centerIn: parent
-                                }
-                            }
-
-                            Column {
-                                Layout.fillWidth: true
-                                Layout.alignment: Qt.AlignVCenter
-                                spacing: 2
-                                StyledText { text: I18n.tr("Backdrop Dim"); font.weight: Font.Medium; color: Theme.surfaceText }
-                                StyledText { text: I18n.tr("Backdrop overlay dim level for fullscreen modal"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; Layout.fillWidth: true; elide: Text.ElideRight }
-                            }
-
-                            Rectangle {
-                                id: dimResetBtn
-                                width: 32; height: 32
-                                radius: Theme.cornerRadius
-                                Layout.alignment: Qt.AlignVCenter
-                                color: dimResetMa.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
-                                border.color: dimResetMa.containsMouse ? Theme.primary : Theme.outline
-                                border.width: 1
-                                opacity: dimSlider.value !== dimSlider.defaultValue ? (dimResetMa.containsMouse ? 1.0 : 0.9) : 0.0
-                                visible: opacity > 0
-                                scale: dimResetMa.containsMouse ? 1.1 : 1.0
-
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                                Behavior on border.color { ColorAnimation { duration: 150 } }
-                                Behavior on opacity { NumberAnimation { duration: 150 } }
-                                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-
-                                DankRipple { 
-                                    id: dimRip
-                                    anchors.fill: parent
-                                    cornerRadius: parent.radius
-                                    rippleColor: Theme.primary 
-                                }
-
-                                DankIcon {
-                                    name: "restart_alt"
-                                    size: 18
-                                    anchors.centerIn: parent
-                                    color: dimResetMa.containsMouse ? Theme.primary : Theme.surfaceVariantText
-                                    rotation: dimResetMa.containsMouse ? 90 : 0
-                                    Behavior on rotation { NumberAnimation { duration: 450; easing.type: Easing.OutBack } }
-                                    Behavior on color { ColorAnimation { duration: 150 } }
-                                }
-
-                                MouseArea {
-                                    id: dimResetMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        dimSlider.value = dimSlider.defaultValue;
-                                        root.saveValue(dimSlider.settingKey, dimSlider.defaultValue / 100);
-                                    }
-                                    onPressed: (m) => dimRip.trigger(m.x, m.y)
-                                }
-                            }
-                        }
-
-                        DankSlider {
+                        SliderSettingV2 {
                             id: dimSlider
-                            property string settingKey: "backdropDim"
-                            property int defaultValue: 20
-                            width: parent.width
-                            minimum: 0
-                            maximum: 100
-                            step: 1
-                            unit: "%"
-
-                            function loadValue() {
-                                const savedVal = root.loadValue(settingKey, defaultValue / 100);
-                                value = Math.round(parseFloat(savedVal) * 100);
-                            }
-                            Component.onCompleted: loadValue()
-                            onSliderValueChanged: newValue => {
-                                value = newValue;
-                                root.saveValue(settingKey, newValue / 100);
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: false
-                                acceptedButtons: Qt.NoButton
-                                onWheel: (wheel) => { wheel.accepted = true; }
-                            }
+                            Layout.fillWidth: true
+                            settingKey: "backdropDim"
+                            label: I18n.tr("Backdrop Dim")
+                            description: I18n.tr("Backdrop overlay dim level for fullscreen modal")
+                            defaultValue: "0.20"
+                            minVal: 0.00
+                            maxVal: 1.00
+                            isFloatBackend: true
+                            showPercentage: true
+                            iconName: "tonality"
                         }
                     }
                 }
@@ -589,7 +517,7 @@ PluginSettings {
                 // Segment 2: UI Transparency Slider
                 Rectangle {
                     width: parent.width
-                    implicitHeight: transCol.implicitHeight + Theme.spacingM * 2
+                    height: transCol.implicitHeight + Theme.spacingM * 2
                     color: Theme.withAlpha(Theme.surfaceContainerHigh, 0.5)
                     border.width: 1
                     border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.10)
@@ -599,113 +527,24 @@ PluginSettings {
                     bottomLeftRadius: root.outerR
                     bottomRightRadius: root.outerR
 
-                    Column {
+                    ColumnLayout {
                         id: transCol
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacingM
+                        anchors.left: parent.left; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                        anchors.leftMargin: Theme.spacingM; anchors.rightMargin: Theme.spacingM
                         spacing: Theme.spacingS
 
-                        RowLayout {
-                            width: parent.width
-                            spacing: Theme.spacingM
-
-                            Rectangle {
-                                width: 32
-                                height: 32
-                                radius: 16
-                                color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
-                                Layout.alignment: Qt.AlignVCenter
-
-                                DankIcon {
-                                    name: "opacity"
-                                    size: 18
-                                    color: Theme.primary
-                                    anchors.centerIn: parent
-                                }
-                            }
-
-                            Column {
-                                Layout.fillWidth: true
-                                Layout.alignment: Qt.AlignVCenter
-                                spacing: 2
-                                StyledText { text: I18n.tr("UI Transparency"); font.weight: Font.Medium; color: Theme.surfaceText }
-                                StyledText { text: I18n.tr("UI transparency level for settings modal cards"); font.pixelSize: Theme.fontSizeSmall; color: Theme.surfaceVariantText; Layout.fillWidth: true; elide: Text.ElideRight }
-                            }
-
-                            Rectangle {
-                                id: transResetBtn
-                                width: 32; height: 32
-                                radius: Theme.cornerRadius
-                                Layout.alignment: Qt.AlignVCenter
-                                color: transResetMa.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
-                                border.color: transResetMa.containsMouse ? Theme.primary : Theme.outline
-                                border.width: 1
-                                opacity: transSlider.value !== transSlider.defaultValue ? (transResetMa.containsMouse ? 1.0 : 0.9) : 0.0
-                                visible: opacity > 0
-                                scale: transResetMa.containsMouse ? 1.1 : 1.0
-
-                                Behavior on color { ColorAnimation { duration: 150 } }
-                                Behavior on border.color { ColorAnimation { duration: 150 } }
-                                Behavior on opacity { NumberAnimation { duration: 150 } }
-                                Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
-
-                                DankRipple { 
-                                    id: transRip
-                                    anchors.fill: parent
-                                    cornerRadius: parent.radius
-                                    rippleColor: Theme.primary 
-                                }
-
-                                DankIcon {
-                                    name: "restart_alt"
-                                    size: 18
-                                    anchors.centerIn: parent
-                                    color: transResetMa.containsMouse ? Theme.primary : Theme.surfaceVariantText
-                                    rotation: transResetMa.containsMouse ? 90 : 0
-                                    Behavior on rotation { NumberAnimation { duration: 450; easing.type: Easing.OutBack } }
-                                    Behavior on color { ColorAnimation { duration: 150 } }
-                                }
-
-                                MouseArea {
-                                    id: transResetMa
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        transSlider.value = transSlider.defaultValue;
-                                        root.saveValue(transSlider.settingKey, transSlider.defaultValue / 100);
-                                    }
-                                    onPressed: (m) => transRip.trigger(m.x, m.y)
-                                }
-                            }
-                        }
-
-                        DankSlider {
+                        SliderSettingV2 {
                             id: transSlider
-                            property string settingKey: "uiTransparency"
-                            property int defaultValue: 50
-                            width: parent.width
-                            minimum: 0
-                            maximum: 100
-                            step: 1
-                            unit: "%"
-
-                            function loadValue() {
-                                const savedVal = root.loadValue(settingKey, defaultValue / 100);
-                                value = Math.round(parseFloat(savedVal) * 100);
-                            }
-                            Component.onCompleted: loadValue()
-                            onSliderValueChanged: newValue => {
-                                value = newValue;
-                                root.saveValue(settingKey, newValue / 100);
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: false
-                                acceptedButtons: Qt.NoButton
-                                onWheel: (wheel) => { wheel.accepted = true; }
-                            }
+                            Layout.fillWidth: true
+                            settingKey: "uiTransparency"
+                            label: I18n.tr("UI Transparency")
+                            description: I18n.tr("UI transparency level for settings modal cards")
+                            defaultValue: "0.50"
+                            minVal: 0.00
+                            maxVal: 1.00
+                            isFloatBackend: true
+                            showPercentage: true
+                            iconName: "opacity"
                         }
                     }
                 }
@@ -717,22 +556,9 @@ PluginSettings {
             width: parent.width
             spacing: Theme.spacingS
 
-            Row {
-                spacing: Theme.spacingXS
-                leftPadding: Theme.spacingM
-                DankIcon {
-                    name: "terminal"
-                    size: 16
-                    color: Theme.primary
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-                StyledText {
-                    text: I18n.tr("Commands & Shortcuts")
-                    font.pixelSize: Theme.fontSizeSmall
-                    font.weight: Font.DemiBold
-                    color: Theme.primary
-                    anchors.verticalCenter: parent.verticalCenter
-                }
+            SectionHeader {
+                title: I18n.tr("IPC Commands & Shortcuts")
+                iconName: "keyboard_command_key"
             }
 
             Rectangle {
@@ -751,12 +577,79 @@ PluginSettings {
                     anchors.topMargin: Theme.spacingM
                     spacing: Theme.spacingM
 
-                    StyledText {
+                    RowLayout {
                         width: parent.width
-                        text: I18n.tr("You can open, close, or toggle the Niri Display Settings modal using the dms CLI:")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        wrapMode: Text.WordWrap
+                        spacing: Theme.spacingM
+
+                        Column {
+                            Layout.fillWidth: true
+                            spacing: 2
+
+                            StyledText {
+                                text: I18n.tr("You can open, close, or toggle the Niri Display Settings modal using the dms CLI:")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+
+                        Rectangle {
+                            id: openModalBtn
+                            Layout.preferredHeight: 34
+                            Layout.preferredWidth: openModalRow.implicitWidth + 24
+                            Layout.alignment: Qt.AlignVCenter
+                            property bool isHovered: openModalMa.containsMouse
+
+                            radius: isHovered ? (height / 2) : (Theme.cornerRadius || 12)
+                            Behavior on radius { NumberAnimation { duration: 350; easing.type: Easing.OutExpo } }
+
+                            color: isHovered ? Theme.withAlpha(Theme.primary, 0.25) : Theme.withAlpha(Theme.primary, 0.15)
+                            Behavior on color { ColorAnimation { duration: 150 } }
+                            border.width: 1
+                            border.color: isHovered ? Theme.primary : Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.3)
+                            Behavior on border.color { ColorAnimation { duration: 150 } }
+
+                            scale: openModalMa.pressed ? 0.94 : (isHovered ? 1.02 : 1.0)
+                            Behavior on scale { NumberAnimation { duration: 150; easing.type: Easing.OutBack } }
+
+                            DankRipple {
+                                id: openModalRip
+                                anchors.fill: parent
+                                cornerRadius: parent.radius
+                                rippleColor: Theme.primary
+                            }
+
+                            RowLayout {
+                                id: openModalRow
+                                anchors.centerIn: parent
+                                spacing: 6
+
+                                DankIcon {
+                                    name: "open_in_new"
+                                    size: 16
+                                    color: Theme.primary
+                                }
+
+                                StyledText {
+                                    text: I18n.tr("Toggle Modal")
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    font.weight: Font.Medium
+                                    color: Theme.primary
+                                }
+                            }
+
+                            MouseArea {
+                                id: openModalMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onPressed: (m) => openModalRip.trigger(m.x, m.y)
+                                onClicked: {
+                                    launchProcess.running = true;
+                                }
+                            }
+                        }
                     }
 
                     CopyBox {

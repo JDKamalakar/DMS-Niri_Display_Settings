@@ -2,3 +2,5 @@ module dms.plugins.niriDSA
 singleton NiriDS NiriDisplaySettingsService.qml
 NiriDisplaySettingsModal NiriDisplaySettingsModal.qml
 NiriDisplaySettingsWidget NiriDisplaySettingsWidget.qml
+SliderSettingV2 SliderSettingV2.qml
+
